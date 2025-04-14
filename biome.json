@@ -1,0 +1,185 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "ignore": [
+      "**/node_modules",
+      "**/dist",
+      "**/build",
+      "**/public",
+      "**/.turbo",
+      "**/.next",
+      "**/.vercel",
+      "**/coverage",
+      "**/.husky",
+      "**/.vscode",
+      "**/drizzle/migrations",
+      "**/bun.lockb"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "ignore": [
+      "**/node_modules",
+      "**/dist",
+      "**/build",
+      "**/public",
+      "**/.turbo",
+      "**/.next",
+      "**/.vercel",
+      "**/coverage",
+      "**/.husky",
+      "**/.vscode",
+      "**/drizzle/migrations"
+    ]
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "noAriaUnsupportedElements": "warn",
+        "noBlankTarget": "error",
+        "noLabelWithoutControl": "off",
+        "noSvgWithoutTitle": "off",
+        "useAltText": "warn",
+        "useAriaPropsForRole": "warn",
+        "useButtonType": "off",
+        "useKeyWithClickEvents": "off",
+        "useSemanticElements": "off",
+        "useValidAriaProps": "warn",
+        "useValidAriaValues": "warn"
+      },
+      "complexity": {
+        "noBannedTypes": "off",
+        "noUselessTypeConstraint": "error",
+        "noExcessiveCognitiveComplexity": "warn",
+        "noStaticOnlyClass": "off",
+        "useLiteralKeys": "off"
+      },
+      "correctness": {
+        "noChildrenProp": "error",
+        "noConstAssign": "error",
+        "noGlobalObjectCalls": "error",
+        "noInvalidConstructorSuper": "error",
+        "noUnreachable": "error",
+        "noUnusedVariables": "error",
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "error",
+        "useJsxKeyInIterable": "error",
+        "noUnusedImports": "warn"
+      },
+      "nursery": {
+        "useSortedClasses": {
+          "level": "warn",
+          "fix": "safe",
+          "options": {
+            "attributes": ["classList", "className"],
+            "functions": ["clsx", "cva", "tw", "cn"]
+          }
+        }
+      },
+      "performance": {
+        "noAccumulatingSpread": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn",
+        "noDangerouslySetInnerHtmlWithChildren": "error"
+      },
+      "style": {
+        "noArguments": "error",
+        "noNamespace": "error",
+        "noVar": "error",
+        "useAsConstAssertion": "error",
+        "useConst": "error",
+        "useImportType": "warn",
+        "useConsistentArrayType": "warn",
+        "useDefaultParameterLast": "warn",
+        "useSingleCaseStatement": "warn",
+        "useTemplate": "warn"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn",
+        "noAssignInExpressions": "warn",
+        "noCommentText": "error",
+        "noDuplicateJsxProps": "error",
+        "noExplicitAny": "error",
+        "noExtraNonNullAssertion": "error",
+        "noMisleadingInstantiator": "error",
+        "noUnsafeDeclarationMerging": "error",
+        "useGetterReturn": "error"
+      }
+    },
+    "ignore": [
+      "**/node_modules",
+      "**/dist",
+      "**/build",
+      "**/public",
+      "**/.turbo",
+      "**/.next",
+      "**/.vercel",
+      "**/coverage",
+      "**/.husky",
+      "**/.vscode",
+      "**/drizzle/migrations"
+    ]
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingCommas": "es5",
+      "semicolons": "always"
+    }
+  },
+  "overrides": [
+    {
+      "include": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["**/drizzle/schema/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["**/app/api/**/*.ts", "**/server/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useDefaultParameterLast": "off"
+          },
+          "suspicious": {
+            "noExplicitAny": "warn"
+          }
+        }
+      }
+    },
+    {
+      "include": ["**/middleware.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "warn"
+          }
+        }
+      }
+    }
+  ]
+}
