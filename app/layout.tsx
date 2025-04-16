@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Starter Kit",
-  description: "Starter Kit",
+  title: "WayBinder",
+  description:
+    "Waybinder helps you track, organize, and share your outdoor journeys with day-by-day activities and interactive maps.",
 };
 
 export default function RootLayout({

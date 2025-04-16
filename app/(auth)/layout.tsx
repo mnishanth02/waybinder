@@ -2,10 +2,11 @@ import { cn } from "@/lib/utils";
 
 export const metadata = {
   title: {
-    template: "%s | Starter Kit",
-    default: "Authentication | Starter Kit",
+    template: "%s | WayBinder",
+    default: "Authentication | WayBinder",
   },
-  description: "Secure authentication for your Starter Kit account",
+  description:
+    "Wayfinder helps you track, organize, and share your outdoor journeys with day-by-day activities and interactive maps.",
 };
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
