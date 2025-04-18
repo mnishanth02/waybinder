@@ -1,12 +1,11 @@
 import { handle } from "hono/vercel";
 
 import app from "@/server";
-import todosRoutes from "@/server/routes/todo.route";
+import athleteRouter from "@/server/routes/athlete.route";
 import userRouter from "@/server/routes/user.route";
-
 export const runtime = "edge";
 
-const routes = app.route("/user", userRouter).route("/todos", todosRoutes);
+const routes = app.route("/user", userRouter).route("/athlete", athleteRouter);
 
 //
 

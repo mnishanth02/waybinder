@@ -18,7 +18,7 @@ export const protect = async (c: Context, next: Next) => {
     );
   }
 
-  console.log(session.user);
+  // console.log(session.user);
   // Optionally set the user and session on the context variables
   c.set("user", session.user);
   c.set("session", session.session);

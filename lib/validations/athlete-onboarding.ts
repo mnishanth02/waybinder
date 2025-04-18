@@ -129,10 +129,15 @@ export const additionalInfoStepSchema = additionalInfoSchema.pick({
   communicationPreferences: true,
 });
 
+// Athlete Update Schema - all fields optional for partial updates
+export const athleteUpdateSchema = athleteOnboardingSchema.partial();
+
 export type BasicInfoFormValues = z.infer<typeof basicInfoSchema>;
 export type SportsActivityFormValues = z.infer<typeof sportsActivitySchema>;
 export type AdditionalInfoFormValues = z.infer<typeof additionalInfoSchema>;
-export type AthleteOnboardingFormValues = z.infer<typeof athleteOnboardingSchema>;
 export type BasicInfoStepFormValues = z.infer<typeof basicInfoStepSchema>;
 export type SportsActivityStepFormValues = z.infer<typeof sportsActivityStepSchema>;
 export type AdditionalInfoStepFormValues = z.infer<typeof additionalInfoStepSchema>;
+
+export type AthleteOnboardingFormValues = z.infer<typeof athleteOnboardingSchema>;
+export type AthleteUpdateFormValues = z.infer<typeof athleteUpdateSchema>;
