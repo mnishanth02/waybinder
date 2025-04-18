@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAthleteOnboardingStore } from "@/features/onboarding/store/athlete-onboarding-store";
 import { cn } from "@/lib/utils";
 import {
@@ -29,9 +30,10 @@ import {
   additionalInfoStepSchema,
 } from "@/lib/validations/athlete-onboarding";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Globe, Link2, PlusCircle, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { AlertCircle, Check, Globe, Link2, PlusCircle, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { type FieldErrors, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import type { z } from "zod";
 
 interface AthleteAdditionalInfoFormProps {
@@ -68,11 +70,26 @@ interface SocialLink {
   platform: string;
   url: string;
   label?: string; // For "other" platform types
+  isValid?: boolean; // To track URL validation state
 }
 
+// URL validation function
+const isValidURL = (url: string): boolean => {
+  if (!url) return true; // Empty URLs are considered valid for optional fields
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalInfoFormProps) {
+  console.log("AthleteAdditionalInfoForm rendered");
   const updateAdditionalInfo = useAthleteOnboardingStore((state) => state.updateAdditionalInfo);
   const additionalInfo = useAthleteOnboardingStore((state) => state.additionalInfo);
+  const [activeTab, setActiveTab] = useState("profile");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Convert the existing links to the new unified format
   const convertDefaultLinksToUnified = (): SocialLink[] => {
@@ -80,32 +97,48 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
 
     // Process websites
     additionalInfo.websiteURLs?.forEach((url, index) => {
-      if (url) links.push({ id: `website-${index}`, platform: "website", url });
+      if (url)
+        links.push({ id: `website-${index}`, platform: "website", url, isValid: isValidURL(url) });
     });
 
     // Process Strava
     additionalInfo.stravaLinks?.forEach((url, index) => {
-      if (url) links.push({ id: `strava-${index}`, platform: "strava", url });
+      if (url)
+        links.push({ id: `strava-${index}`, platform: "strava", url, isValid: isValidURL(url) });
     });
 
     // Process Instagram
     additionalInfo.instagramLinks?.forEach((url, index) => {
-      if (url) links.push({ id: `instagram-${index}`, platform: "instagram", url });
+      if (url)
+        links.push({
+          id: `instagram-${index}`,
+          platform: "instagram",
+          url,
+          isValid: isValidURL(url),
+        });
     });
 
     // Process Facebook
     additionalInfo.facebookLinks?.forEach((url, index) => {
-      if (url) links.push({ id: `facebook-${index}`, platform: "facebook", url });
+      if (url)
+        links.push({
+          id: `facebook-${index}`,
+          platform: "facebook",
+          url,
+          isValid: isValidURL(url),
+        });
     });
 
     // Process Twitter
     additionalInfo.twitterLinks?.forEach((url, index) => {
-      if (url) links.push({ id: `twitter-${index}`, platform: "twitter", url });
+      if (url)
+        links.push({ id: `twitter-${index}`, platform: "twitter", url, isValid: isValidURL(url) });
     });
 
     // Process YouTube
     additionalInfo.youtubeURLs?.forEach((url, index) => {
-      if (url) links.push({ id: `youtube-${index}`, platform: "youtube", url });
+      if (url)
+        links.push({ id: `youtube-${index}`, platform: "youtube", url, isValid: isValidURL(url) });
     });
 
     // Process other social links
@@ -116,12 +149,13 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
           platform: "other",
           url: item.url,
           label: item.label,
+          isValid: isValidURL(item.url),
         });
     });
 
     // If no links, add an empty one
     if (links.length === 0) {
-      links.push({ id: "default-0", platform: "website", url: "" });
+      links.push({ id: "default-0", platform: "website", url: "", isValid: true });
     }
 
     return links;
@@ -129,47 +163,45 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
 
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(convertDefaultLinksToUnified());
 
-  // Use store state for defaults
   const form = useForm<z.infer<typeof additionalInfoStepSchema>>({
     resolver: zodResolver(additionalInfoStepSchema),
     defaultValues: {
-      bio: "",
-      goals: "",
-      sponsors: "",
-      websiteURLs: [""],
-      stravaLinks: [""],
-      instagramLinks: [""],
-      facebookLinks: [""],
-      twitterLinks: [""],
-      youtubeURLs: [""],
-      otherSocialLinks: [{ label: "", url: "" }],
-      emergencyContact: {
+      bio: additionalInfo.bio ?? "",
+      goals: additionalInfo.goals ?? "",
+      sponsors: additionalInfo.sponsors ?? "",
+      websiteURLs: additionalInfo.websiteURLs?.filter((url) => url) ?? [],
+      stravaLinks: additionalInfo.stravaLinks?.filter((url) => url) ?? [],
+      instagramLinks: additionalInfo.instagramLinks?.filter((url) => url) ?? [],
+      facebookLinks: additionalInfo.facebookLinks?.filter((url) => url) ?? [],
+      twitterLinks: additionalInfo.twitterLinks?.filter((url) => url) ?? [],
+      youtubeURLs: additionalInfo.youtubeURLs?.filter((url) => url) ?? [],
+      otherSocialLinks: additionalInfo.otherSocialLinks?.filter((link) => link.url) ?? [],
+      emergencyContact: additionalInfo.emergencyContact ?? {
         name: "",
         phoneNumber: "",
         relationship: "",
       },
-      allergies: "",
-      medicalConditions: "",
-      medications: "",
-      bloodGroup: "unknown",
-      privacySettings: {
+      allergies: additionalInfo.allergies ?? "",
+      medicalConditions: additionalInfo.medicalConditions ?? "",
+      medications: additionalInfo.medications ?? "",
+      bloodGroup: additionalInfo.bloodGroup ?? "unknown",
+      privacySettings: additionalInfo.privacySettings ?? {
         showLocation: true,
         showAge: true,
         showActivityData: true,
         showMedicalInfo: false,
       },
-      communicationPreferences: {
+      communicationPreferences: additionalInfo.communicationPreferences ?? {
         receiveEmails: true,
         receiveNotifications: true,
         allowMessaging: true,
       },
-      ...additionalInfo,
     },
+    mode: "onBlur",
   });
 
-  // Replace onSubmit with local handler
-  const handleSubmit = (values: AdditionalInfoFormValues) => {
-    // Convert the unified links back to the expected format
+  // Synchronize local socialLinks state with RHF state for validation
+  useEffect(() => {
     const websiteURLs: string[] = [];
     const stravaLinks: string[] = [];
     const instagramLinks: string[] = [];
@@ -206,26 +238,85 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
       }
     }
 
-    // If any array is empty, add an empty string to keep the schema valid
-    if (websiteURLs.length === 0) websiteURLs.push("");
-    if (stravaLinks.length === 0) stravaLinks.push("");
-    if (instagramLinks.length === 0) instagramLinks.push("");
-    if (facebookLinks.length === 0) facebookLinks.push("");
-    if (twitterLinks.length === 0) twitterLinks.push("");
-    if (youtubeURLs.length === 0) youtubeURLs.push("");
-    if (otherSocialLinks.length === 0) otherSocialLinks.push({ label: "", url: "" });
+    form.setValue("websiteURLs", websiteURLs, { shouldValidate: true });
+    form.setValue("stravaLinks", stravaLinks, { shouldValidate: true });
+    form.setValue("instagramLinks", instagramLinks, { shouldValidate: true });
+    form.setValue("facebookLinks", facebookLinks, { shouldValidate: true });
+    form.setValue("twitterLinks", twitterLinks, { shouldValidate: true });
+    form.setValue("youtubeURLs", youtubeURLs, { shouldValidate: true });
+    form.setValue("otherSocialLinks", otherSocialLinks, { shouldValidate: true });
+  }, [socialLinks, form.setValue]);
 
-    updateAdditionalInfo({
-      ...values,
-      websiteURLs,
-      stravaLinks,
-      instagramLinks,
-      facebookLinks,
-      twitterLinks,
-      youtubeURLs,
-      otherSocialLinks,
-    });
-    onNext();
+  // Real-time validation state for UI feedback
+  useEffect(() => {
+    const updatedLinks = socialLinks.map((link) => ({
+      ...link,
+      isValid: link.url ? isValidURL(link.url) : true,
+    }));
+    const hasChanges = JSON.stringify(updatedLinks) !== JSON.stringify(socialLinks);
+    if (hasChanges) {
+      setSocialLinks(updatedLinks);
+    }
+  }, [socialLinks]);
+
+  // Form submission handler (SUCCESS case)
+  const handleFormSubmit = (values: AdditionalInfoFormValues) => {
+    setIsSubmitting(true);
+    console.log("handleSubmit SUCCESS", values);
+
+    try {
+      updateAdditionalInfo(values);
+      toast.success("Information saved successfully");
+      console.log("Calling onNext()");
+      onNext();
+      console.log("onNext() called");
+    } catch (e) {
+      const error = e as Error;
+      toast.error(`There was a problem saving your information: ${error.message}`);
+      console.log("Error saving data:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Form submission handler (ERROR case)
+  const handleFormError = (errors: FieldErrors<AdditionalInfoFormValues>) => {
+    console.log("handleSubmit ERROR (Validation Failed)", errors);
+    setIsSubmitting(false);
+    toast.error("Please fix the errors in the form.");
+
+    const errorFields = Object.keys(errors);
+    if (
+      errorFields.includes("bio") ||
+      errorFields.includes("goals") ||
+      errorFields.includes("sponsors")
+    ) {
+      setActiveTab("profile");
+    } else if (
+      errorFields.some(
+        (field) =>
+          field.startsWith("websiteURLs") ||
+          field.startsWith("stravaLinks") ||
+          field.startsWith("instagramLinks") ||
+          field.startsWith("facebookLinks") ||
+          field.startsWith("twitterLinks") ||
+          field.startsWith("youtubeURLs") ||
+          field.startsWith("otherSocialLinks")
+      )
+    ) {
+      setActiveTab("social");
+    } else if (
+      errorFields.some(
+        (field) =>
+          field.startsWith("emergencyContact") ||
+          field.includes("allergies") ||
+          field.includes("medicalConditions") ||
+          field.includes("medications") ||
+          field.includes("bloodGroup")
+      )
+    ) {
+      setActiveTab("additional");
+    }
   };
 
   // Add a new social link
@@ -236,6 +327,7 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
         id: `link-${Date.now()}`,
         platform: "website",
         url: "",
+        isValid: true,
       },
     ]);
   };
@@ -248,14 +340,23 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
   // Update a social link
   const updateSocialLink = (id: string, field: keyof SocialLink, value: string) => {
     setSocialLinks(
-      socialLinks.map((link) => (link.id === id ? { ...link, [field]: value } : link))
+      socialLinks.map((link) => {
+        if (link.id === id) {
+          const updatedLink = { ...link, [field]: value };
+          if (field === "url") {
+            updatedLink.isValid = isValidURL(value);
+          }
+          return updatedLink;
+        }
+        return link;
+      })
     );
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <Tabs defaultValue="profile" className="w-full">
+      <form onSubmit={form.handleSubmit(handleFormSubmit, handleFormError)} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">Profile Info</TabsTrigger>
             <TabsTrigger value="social">Web & Social</TabsTrigger>
@@ -345,7 +446,13 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
 
             <div className="space-y-4">
               {socialLinks.map((link) => (
-                <Card key={link.id} className="overflow-hidden">
+                <Card
+                  key={link.id}
+                  className={cn(
+                    "overflow-hidden border",
+                    link.url && link.isValid === false && "border-destructive"
+                  )}
+                >
                   <CardContent className="p-4">
                     <div className="grid gap-4 md:grid-cols-12">
                       <div className="md:col-span-4">
@@ -388,11 +495,42 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
                           link.platform === "other" ? "md:col-span-5" : "md:col-span-7"
                         )}
                       >
-                        <Input
-                          placeholder={`Enter ${socialPlatforms.find((p) => p.value === link.platform)?.label || "URL"} link`}
-                          value={link.url}
-                          onChange={(e) => updateSocialLink(link.id, "url", e.target.value)}
-                        />
+                        <div className="relative">
+                          <Input
+                            placeholder={`Enter ${socialPlatforms.find((p) => p.value === link.platform)?.label || "URL"} link`}
+                            value={link.url}
+                            onChange={(e) => updateSocialLink(link.id, "url", e.target.value)}
+                            className={cn(link.url && !link.isValid && "border-destructive pr-10")}
+                          />
+                          {link.url && (
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                              {link.isValid ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Check className="h-4 w-4 text-green-500" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Valid URL format</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertCircle className="h-4 w-4 text-destructive" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Invalid URL format (e.g., https://example.com)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {link.url && !link.isValid && (
+                          <p className="mt-1 text-destructive text-xs">
+                            Please enter a valid URL including https://
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-end md:col-span-1">
@@ -417,6 +555,22 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
                 Add Link
               </Button>
             </div>
+
+            {form.formState.errors.websiteURLs && (
+              <p className="text-destructive text-sm">
+                {form.formState.errors.websiteURLs.message || "Invalid website URL(s)"}
+              </p>
+            )}
+            {form.formState.errors.stravaLinks && (
+              <p className="text-destructive text-sm">
+                {form.formState.errors.stravaLinks.message || "Invalid Strava URL(s)"}
+              </p>
+            )}
+            {form.formState.errors.otherSocialLinks && (
+              <p className="text-destructive text-sm">
+                {form.formState.errors.otherSocialLinks.message || "Invalid Other URL(s)"}
+              </p>
+            )}
           </TabsContent>
 
           <TabsContent value="additional" className="space-y-6 pt-4">
@@ -432,7 +586,6 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
               </p>
             </div>
 
-            {/* Emergency Contact */}
             <Card>
               <CardContent className="p-4 pt-6">
                 <h4 className="mb-4 font-medium">Emergency Contact</h4>
@@ -559,7 +712,9 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
           <Button type="button" variant="outline" onClick={onBack}>
             Back
           </Button>
-          <Button type="submit">Continue</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Continue"}
+          </Button>
         </div>
       </form>
     </Form>

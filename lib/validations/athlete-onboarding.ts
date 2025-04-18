@@ -37,22 +37,11 @@ export const sportsActivitySchema = z.object({
       experienceLevel: z.enum(["beginner", "intermediate", "advanced", "professional"]),
     })
     .optional(),
-  secondaryActivities: z.array(z.string()).optional(),
   fitnessLevel: z.enum(["beginner", "intermediate", "advanced"], {
     required_error: "Please select a fitness level",
   }),
-  height: z
-    .object({
-      value: z.number(),
-      unit: z.enum(["cm", "feet"]),
-    })
-    .optional(),
-  weight: z
-    .object({
-      value: z.number(),
-      unit: z.enum(["kg", "lbs"]),
-    })
-    .optional(),
+  height: z.string().optional(),
+  weight: z.string().optional(),
 });
 
 // Additional Information Schema
@@ -115,7 +104,6 @@ export const sportsActivityStepSchema = sportsActivitySchema.pick({
   primaryActivity1: true,
   primaryActivity2: true,
   primaryActivity3: true,
-  secondaryActivities: true,
   fitnessLevel: true,
   height: true,
   weight: true,

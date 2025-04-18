@@ -91,14 +91,9 @@ export function AthleteOnboardingForm() {
 
   return (
     <div className="relative">
-      {/* Progress indicator */}
       <ProgressIndicator currentStepIndex={currentStepIndex} totalSteps={totalSteps} />
-
-      {/* Step navigation */}
       <StepNavigation steps={steps} currentStepIndex={currentStepIndex} goTo={goTo} />
-
-      {/* Form content */}
-      <div className="p-6">
+      <div className="p-4">
         <FormStepRenderer step={step} next={next} back={back} />
       </div>
     </div>

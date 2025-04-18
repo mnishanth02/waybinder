@@ -19,7 +19,6 @@ export const FormStepRenderer = memo(function FormStepRenderer({
 }: FormStepRendererProps) {
   if (!step) return null;
 
-  // Render the appropriate step component
   switch (step.id) {
     case "introduction":
       return <AthleteIntroduction onNext={next} />;

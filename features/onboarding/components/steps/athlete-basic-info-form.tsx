@@ -1,31 +1,19 @@
 "use client";
-
+import { DatePickerWithLabel } from "@/components/custom/date-picker-with-label";
 import { InputWithLabel } from "@/components/custom/input-with-label";
 import { SelectWithLabel } from "@/components/custom/select-with-label";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { useAthleteOnboardingStore } from "@/features/onboarding/store/athlete-onboarding-store";
-import { cn } from "@/lib/utils";
 import {
   type BasicInfoFormValues,
   basicInfoStepSchema,
 } from "@/lib/validations/athlete-onboarding";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
-import { CalendarIcon, Camera, ImageIcon, MapPin, X } from "lucide-react";
+import { Camera, ImageIcon, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -45,12 +33,7 @@ export function AthleteBasicInfoForm({ onNext }: AthleteBasicInfoFormProps) {
     basicInfo.coverPhotoUrl || null
   );
 
-  // Derive base defaults from the Zod schema
-  // const baseDefaults: z.infer<typeof basicInfoStepSchema> = basicInfoStepSchema.parse({});
-
-  // Merge defaults: start with base, spread store, then fix DOB type
   const mergedDefaults = {
-    // ...baseDefaults,
     ...basicInfo,
     dateOfBirth: basicInfo.dateOfBirth ? new Date(basicInfo.dateOfBirth) : undefined,
   };
@@ -119,7 +102,6 @@ export function AthleteBasicInfoForm({ onNext }: AthleteBasicInfoFormProps) {
 
   // Replace onSubmit with local handler
   const handleSubmit = (values: BasicInfoFormValues) => {
-    // Always persist the latest preview URLs as well
     updateBasicInfo({
       ...values,
       profileImageUrl: profileImagePreview || "",
@@ -236,168 +218,51 @@ export function AthleteBasicInfoForm({ onNext }: AthleteBasicInfoFormProps) {
           <div className="space-y-2">
             <h3 className="font-medium">Personal Information</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      First Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <InputWithLabel
-                        nameInSchema="firstName"
-                        placeholder="Enter first name"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <InputWithLabel
+                nameInSchema="firstName"
+                fieldTitle="First Name"
+                placeholder="Enter first name"
               />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Last Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <InputWithLabel
-                        nameInSchema="lastName"
-                        placeholder="Enter last name"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <InputWithLabel
+                nameInSchema="lastName"
+                fieldTitle="Last Name"
+                placeholder="Enter last name"
               />
             </div>
           </div>
 
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Email Address <span className="text-destructive">*</span>
-                </FormLabel>
-                <FormControl>
-                  <InputWithLabel
-                    nameInSchema="email"
-                    type="email"
-                    placeholder="your.email@example.com"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+          <InputWithLabel
+            nameInSchema="email"
+            fieldTitle="Email Address"
+            placeholder="your.email@example.com"
+            type="email"
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="dateOfBirth"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date of Birth</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        fromYear={1920}
-                        toYear={new Date().getFullYear()}
-                        disabled={(date) => date > new Date() || date < new Date("1920-01-01")}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <DatePickerWithLabel
+              nameInSchema="dateOfBirth"
+              fieldTitle="Date of Birth"
+              placeholder="Select date of birth"
             />
-            <FormField
-              control={form.control}
-              name="gender"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Gender</FormLabel>
-                  <SelectWithLabel
-                    fieldTitle="Gender"
-                    nameInSchema="gender"
-                    options={genderOptions}
-                    placeholder="Select gender"
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
+
+            <SelectWithLabel
+              nameInSchema="gender"
+              fieldTitle="Gender"
+              placeholder="Select gender"
+              options={genderOptions}
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="displayName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Display Name</FormLabel>
-                <FormControl>
-                  <InputWithLabel
-                    nameInSchema="displayName"
-                    placeholder="How you'll appear on Waybinder"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Optional. If left blank, your first and last name will be used.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+          <InputWithLabel
+            nameInSchema="displayName"
+            fieldTitle="Display Name"
+            placeholder="How you'll appear on Waybinder"
           />
 
-          <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <MapPin className="absolute top-2.5 left-3 h-4 w-4 text-muted-foreground" />
-                    <InputWithLabel
-                      nameInSchema="location"
-                      placeholder="City, State, Country"
-                      className="pl-9"
-                      {...field}
-                    />
-                  </div>
-                </FormControl>
-                <FormDescription>
-                  Share your location to connect with nearby athletes
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+          <InputWithLabel
+            nameInSchema="location"
+            fieldTitle="Location"
+            placeholder="City, State, Country"
           />
         </div>
 

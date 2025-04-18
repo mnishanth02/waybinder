@@ -1,6 +1,13 @@
 "use client";
 
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -18,7 +25,8 @@ type SelectOption = {
 };
 
 type Props<S> = {
-  fieldTitle: string;
+  description?: string;
+  fieldTitle?: string;
   nameInSchema: keyof S & string;
   options: SelectOption[];
   placeholder?: string;
@@ -28,6 +36,7 @@ type Props<S> = {
 };
 
 export function SelectWithLabel<S>({
+  description,
   fieldTitle,
   nameInSchema,
   options,
@@ -45,6 +54,7 @@ export function SelectWithLabel<S>({
       render={({ field }) => (
         <FormItem>
           <FormLabel htmlFor={nameInSchema}>{fieldTitle}</FormLabel>
+          {description && <FormDescription>{description}</FormDescription>}
           <Select
             onValueChange={field.onChange}
             defaultValue={field.value}

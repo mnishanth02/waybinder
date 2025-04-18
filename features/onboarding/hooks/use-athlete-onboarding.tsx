@@ -1,7 +1,7 @@
+import type { AthleteOnboardingFormValues } from "@/lib/validations/athlete-onboarding";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { AthleteOnboardingFormValues } from "../../../lib/validations/athlete-onboarding";
 import { useAthleteOnboardingStore } from "../store/athlete-onboarding-store";
 
 // Mock function for API call - replace with actual API endpoint

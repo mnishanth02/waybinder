@@ -1,11 +1,13 @@
 "use client";
 
+import { MotionDiv } from "@/components/common/MontionComp";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -27,6 +29,7 @@ import {
   sportsActivityStepSchema,
 } from "@/lib/validations/athlete-onboarding";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AnimatePresence } from "framer-motion";
 import {
   Activity,
   Bike,
@@ -106,9 +109,50 @@ const fitnessLevels = [
   },
 ];
 
+// Utility: full default shape for the form
+const fullDefaultValues: SportsActivityFormValues = {
+  primaryActivity1: {
+    activity: "",
+    experienceLevel: "beginner",
+  },
+  primaryActivity2: undefined,
+  primaryActivity3: undefined,
+  fitnessLevel: "beginner",
+  height: "",
+  weight: "",
+};
+
+function mergeDefaults(
+  defaults: SportsActivityFormValues,
+  state: Partial<SportsActivityFormValues>
+): SportsActivityFormValues {
+  // Helper to check for valid number
+  // const isValidNumber = (value: unknown): boolean => {
+  //     return value !== undefined && value !== null && !Number.isNaN(value) && typeof value === 'number';
+  // };
+
+  return {
+    ...defaults,
+    ...state,
+    primaryActivity1: {
+      ...defaults.primaryActivity1,
+      ...(state.primaryActivity1 || {}),
+    },
+    primaryActivity2: state.primaryActivity2
+      ? { ...defaults.primaryActivity1, ...state.primaryActivity2 }
+      : undefined,
+    primaryActivity3: state.primaryActivity3
+      ? { ...defaults.primaryActivity1, ...state.primaryActivity3 }
+      : undefined,
+    height: state.height,
+    weight: state.weight,
+  };
+}
+
 export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActivityFormProps) {
   const updateSportsActivity = useAthleteOnboardingStore((state) => state.updateSportsActivity);
   const sportsActivity = useAthleteOnboardingStore((state) => state.sportsActivity);
+
   const [activeExperienceLevel, setActiveExperienceLevel] = useState<string | null>(null);
   const [showSecondaryActivity, setShowSecondaryActivity] = useState<boolean>(
     !!sportsActivity.primaryActivity2?.activity
@@ -116,15 +160,19 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
   const [showTertiaryActivity, setShowTertiaryActivity] = useState<boolean>(
     !!sportsActivity.primaryActivity3?.activity
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Control active tab to persist selection
+  const [activeTab, setActiveTab] = useState<"primary" | "fitness">("primary");
 
-  const form = useForm<z.infer<typeof sportsActivityStepSchema>>({
+  const mergedDefaults = mergeDefaults(fullDefaultValues, sportsActivity);
+  const methods = useForm<z.infer<typeof sportsActivityStepSchema>>({
     resolver: zodResolver(sportsActivityStepSchema),
-    defaultValues: {
-      ...sportsActivity,
-    },
+    defaultValues: mergedDefaults,
+    shouldUnregister: false,
+    criteriaMode: "all",
   });
-
-  const watchPrimaryActivity1 = form.watch("primaryActivity1.activity");
+  const { formState, watch, handleSubmit, resetField } = methods;
+  const watchPrimaryActivity1 = watch("primaryActivity1.activity");
 
   // Filter out already selected activities
   const getFilteredActivities = (excludeValues: string[]) => {
@@ -149,42 +197,48 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
 
   // Remove secondary activity
   const removeSecondaryActivity = () => {
-    form.setValue("primaryActivity2", undefined);
+    resetField("primaryActivity2");
     setShowSecondaryActivity(false);
     setShowTertiaryActivity(false);
   };
 
   // Remove tertiary activity
   const removeTertiaryActivity = () => {
-    form.setValue("primaryActivity3", undefined);
+    resetField("primaryActivity3");
     setShowTertiaryActivity(false);
   };
 
   // Replace onSubmit with local handler
-  const handleSubmit = (values: SportsActivityFormValues) => {
-    updateSportsActivity(values);
-    onNext();
+  const handleFormSubmit = async (values: SportsActivityFormValues) => {
+    setIsSubmitting(true);
+    try {
+      // Clean up empty/unused fields before saving
+      const cleaned: SportsActivityFormValues = {
+        ...values,
+        primaryActivity2: values.primaryActivity2?.activity ? values.primaryActivity2 : undefined,
+        primaryActivity3: values.primaryActivity3?.activity ? values.primaryActivity3 : undefined,
+        height: values.height,
+        weight: values.weight,
+      };
+      updateSportsActivity(cleaned);
+      onNext();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-        {/* <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                        <Activity className="h-5 w-5 text-primary" />
-                        <h3 className="font-medium text-lg">Your Sports Profile</h3>
-                    </div>
-                    <p className="text-muted-foreground">
-                        Tell us about your sports activities to help match you with relevant adventures
-                    </p>
-                </div> */}
-
-        <Tabs defaultValue="primary" className="w-full">
+    <Form {...methods}>
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value: string) => setActiveTab(value as "primary" | "fitness")}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="primary">Primary Activities</TabsTrigger>
             <TabsTrigger value="fitness">Fitness & Measurements</TabsTrigger>
           </TabsList>
-
           <TabsContent value="primary" className="space-y-6 pt-4">
             <div className="space-y-4 rounded-lg bg-primary/5 p-4">
               <div className="flex items-center justify-between">
@@ -197,7 +251,6 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                 Select your main activity and optionally add up to two additional activities
               </p>
             </div>
-
             <div className="space-y-6">
               {/* Primary Activity 1 */}
               <div className="space-y-4">
@@ -212,19 +265,23 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                     Required
                   </Badge>
                 </div>
-
                 <Card>
                   <CardContent className="p-4">
                     <div className="grid gap-4 md:grid-cols-2">
                       <FormField
-                        control={form.control}
+                        control={methods.control}
                         name="primaryActivity1.activity"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Activity Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormDescription>Choose your main outdoor activity.</FormDescription>
+                            <Select value={field.value} onValueChange={field.onChange}>
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger
+                                  className="cursor-pointer"
+                                  aria-invalid={!!formState.errors.primaryActivity1?.activity}
+                                  aria-describedby="primaryActivity1-activity-error"
+                                >
                                   <SelectValue placeholder="Select an activity">
                                     {field.value && (
                                       <div className="flex items-center">
@@ -248,32 +305,45 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                                 ))}
                               </SelectContent>
                             </Select>
-                            <FormMessage />
+                            <FormMessage id="primaryActivity1-activity-error" role="alert" />
                           </FormItem>
                         )}
                       />
-
                       <FormField
-                        control={form.control}
+                        control={methods.control}
                         name="primaryActivity1.experienceLevel"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Experience Level</FormLabel>
+                            <FormDescription>
+                              Indicate your experience for this activity.
+                            </FormDescription>
                             <div className="grid grid-cols-4 gap-2">
                               {experienceLevels.map((level) => (
                                 <div
                                   key={level.value}
                                   className={cn(
-                                    "relative flex h-full cursor-pointer flex-col items-center justify-center rounded-md border p-2",
+                                    "relative flex h-full cursor-pointer flex-col items-center justify-center rounded-md border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary",
                                     field.value === level.value
                                       ? "border-primary bg-primary/5"
                                       : "border-input hover:bg-accent"
                                   )}
+                                  tabIndex={0}
+                                  role="button"
+                                  aria-pressed={field.value === level.value}
                                   onClick={() => {
                                     field.onChange(level.value);
                                     setActiveExperienceLevel(
                                       level.value === activeExperienceLevel ? null : level.value
                                     );
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      field.onChange(level.value);
+                                      setActiveExperienceLevel(
+                                        level.value === activeExperienceLevel ? null : level.value
+                                      );
+                                    }
                                   }}
                                 >
                                   {level.icon}
@@ -292,7 +362,7 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                                 }
                               </p>
                             )}
-                            <FormMessage />
+                            <FormMessage role="alert" />
                           </FormItem>
                         )}
                       />
@@ -300,7 +370,6 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                   </CardContent>
                 </Card>
               </div>
-
               {/* Add Secondary Activity Button */}
               {watchPrimaryActivity1 && !showSecondaryActivity && (
                 <Button
@@ -313,112 +382,139 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                   Add Secondary Activity
                 </Button>
               )}
-
-              {/* Secondary Activity (Optional) */}
-              {showSecondaryActivity && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary font-medium text-secondary-foreground text-xs">
-                        2
-                      </span>
-                      <h4 className="font-medium">Secondary Activity</h4>
+              {/* Secondary Activity (Animated) */}
+              <AnimatePresence>
+                {showSecondaryActivity && (
+                  <MotionDiv
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary font-medium text-secondary-foreground text-xs">
+                          2
+                        </span>
+                        <h4 className="font-medium">Secondary Activity</h4>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeSecondaryActivity}
+                        className="h-8 w-8 p-0"
+                        aria-label="Remove secondary activity"
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove</span>
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={removeSecondaryActivity}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="sr-only">Remove</span>
-                    </Button>
-                  </div>
-
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="primaryActivity2.activity"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Activity Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select an activity">
-                                      {field.value && (
-                                        <div className="flex items-center">
-                                          {getActivityIcon(field.value)}
-                                          <span className="ml-2">
-                                            {activities.find((a) => a.value === field.value)?.label}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {getFilteredActivities([watchPrimaryActivity1]).map(
-                                    (activity) => (
-                                      <SelectItem key={activity.value} value={activity.value}>
-                                        <div className="flex items-center">
-                                          {activity.icon}
-                                          <span className="ml-2">{activity.label}</span>
-                                        </div>
-                                      </SelectItem>
-                                    )
-                                  )}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {form.watch("primaryActivity2.activity") && (
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="grid gap-4 md:grid-cols-2">
                           <FormField
-                            control={form.control}
-                            name="primaryActivity2.experienceLevel"
+                            control={methods.control}
+                            name="primaryActivity2.activity"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Experience Level</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value || "beginner"}
-                                >
+                                <FormLabel>Activity Type</FormLabel>
+                                <FormDescription>
+                                  Choose your secondary activity (optional).
+                                </FormDescription>
+                                <Select value={field.value} onValueChange={field.onChange}>
                                   <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select experience level" />
+                                    <SelectTrigger
+                                      className="cursor-pointer"
+                                      aria-invalid={!!formState.errors.primaryActivity2?.activity}
+                                      aria-describedby="primaryActivity2-activity-error"
+                                    >
+                                      <SelectValue placeholder="Select an activity">
+                                        {field.value && (
+                                          <div className="flex items-center">
+                                            {getActivityIcon(field.value)}
+                                            <span className="ml-2">
+                                              {
+                                                activities.find((a) => a.value === field.value)
+                                                  ?.label
+                                              }
+                                            </span>
+                                          </div>
+                                        )}
+                                      </SelectValue>
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {experienceLevels.map((level) => (
-                                      <SelectItem key={level.value} value={level.value}>
-                                        <div className="flex items-center">
-                                          {level.icon}
-                                          <span className="ml-2">{level.label}</span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
+                                    {getFilteredActivities([watchPrimaryActivity1]).map(
+                                      (activity) => (
+                                        <SelectItem key={activity.value} value={activity.value}>
+                                          <div className="flex items-center">
+                                            {activity.icon}
+                                            <span className="ml-2">{activity.label}</span>
+                                          </div>
+                                        </SelectItem>
+                                      )
+                                    )}
                                   </SelectContent>
                                 </Select>
-                                <FormMessage />
+                                <FormMessage id="primaryActivity2-activity-error" role="alert" />
                               </FormItem>
                             )}
                           />
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
+                          {methods.watch("primaryActivity2.activity") && (
+                            <FormField
+                              control={methods.control}
+                              name="primaryActivity2.experienceLevel"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Experience Level</FormLabel>
+                                  <FormDescription>
+                                    Indicate your experience for this activity.
+                                  </FormDescription>
+                                  <Select
+                                    value={field.value ?? "beginner"}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger
+                                        className="cursor-pointer"
+                                        aria-invalid={
+                                          !!formState.errors.primaryActivity2?.experienceLevel
+                                        }
+                                        aria-describedby="primaryActivity2-experienceLevel-error"
+                                      >
+                                        <SelectValue placeholder="Select experience level" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {experienceLevels.map((level) => (
+                                        <SelectItem key={level.value} value={level.value}>
+                                          <div className="flex items-center">
+                                            {level.icon}
+                                            <span className="ml-2">{level.label}</span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage
+                                    id="primaryActivity2-experienceLevel-error"
+                                    role="alert"
+                                  />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </MotionDiv>
+                )}
+              </AnimatePresence>
               {/* Add Tertiary Activity Button */}
               {showSecondaryActivity &&
-                form.watch("primaryActivity2.activity") &&
+                methods.watch("primaryActivity2.activity") &&
                 !showTertiaryActivity && (
                   <Button
                     type="button"
@@ -430,112 +526,137 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                     Add Tertiary Activity
                   </Button>
                 )}
-
-              {/* Tertiary Activity (Optional) */}
-              {showTertiaryActivity && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary font-medium text-secondary-foreground text-xs">
-                        3
-                      </span>
-                      <h4 className="font-medium">Tertiary Activity</h4>
+              {/* Tertiary Activity (Animated) */}
+              <AnimatePresence>
+                {showTertiaryActivity && (
+                  <MotionDiv
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary font-medium text-secondary-foreground text-xs">
+                          3
+                        </span>
+                        <h4 className="font-medium">Tertiary Activity</h4>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeTertiaryActivity}
+                        className="h-8 w-8 p-0"
+                        aria-label="Remove tertiary activity"
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove</span>
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={removeTertiaryActivity}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="sr-only">Remove</span>
-                    </Button>
-                  </div>
-
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="primaryActivity3.activity"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Activity Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select an activity">
-                                      {field.value && (
-                                        <div className="flex items-center">
-                                          {getActivityIcon(field.value)}
-                                          <span className="ml-2">
-                                            {activities.find((a) => a.value === field.value)?.label}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {getFilteredActivities([
-                                    watchPrimaryActivity1,
-                                    form.watch("primaryActivity2.activity") || "",
-                                  ]).map((activity) => (
-                                    <SelectItem key={activity.value} value={activity.value}>
-                                      <div className="flex items-center">
-                                        {activity.icon}
-                                        <span className="ml-2">{activity.label}</span>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {form.watch("primaryActivity3.activity") && (
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="grid gap-4 md:grid-cols-2">
                           <FormField
-                            control={form.control}
-                            name="primaryActivity3.experienceLevel"
+                            control={methods.control}
+                            name="primaryActivity3.activity"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Experience Level</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value || "beginner"}
-                                >
+                                <FormLabel>Activity Type</FormLabel>
+                                <FormDescription>
+                                  Choose your tertiary activity (optional).
+                                </FormDescription>
+                                <Select value={field.value} onValueChange={field.onChange}>
                                   <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select experience level" />
+                                    <SelectTrigger
+                                      aria-invalid={!!formState.errors.primaryActivity3?.activity}
+                                      aria-describedby="primaryActivity3-activity-error"
+                                    >
+                                      <SelectValue placeholder="Select an activity">
+                                        {field.value && (
+                                          <div className="flex items-center">
+                                            {getActivityIcon(field.value)}
+                                            <span className="ml-2">
+                                              {
+                                                activities.find((a) => a.value === field.value)
+                                                  ?.label
+                                              }
+                                            </span>
+                                          </div>
+                                        )}
+                                      </SelectValue>
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {experienceLevels.map((level) => (
-                                      <SelectItem key={level.value} value={level.value}>
+                                    {getFilteredActivities([
+                                      watchPrimaryActivity1,
+                                      methods.watch("primaryActivity2.activity") || "",
+                                    ]).map((activity) => (
+                                      <SelectItem key={activity.value} value={activity.value}>
                                         <div className="flex items-center">
-                                          {level.icon}
-                                          <span className="ml-2">{level.label}</span>
+                                          {activity.icon}
+                                          <span className="ml-2">{activity.label}</span>
                                         </div>
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                <FormMessage />
+                                <FormMessage id="primaryActivity3-activity-error" role="alert" />
                               </FormItem>
                             )}
                           />
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+                          {methods.watch("primaryActivity3.activity") && (
+                            <FormField
+                              control={methods.control}
+                              name="primaryActivity3.experienceLevel"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Experience Level</FormLabel>
+                                  <FormDescription>
+                                    Indicate your experience for this activity.
+                                  </FormDescription>
+                                  <Select
+                                    value={field.value ?? "beginner"}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger
+                                        aria-invalid={
+                                          !!formState.errors.primaryActivity3?.experienceLevel
+                                        }
+                                        aria-describedby="primaryActivity3-experienceLevel-error"
+                                      >
+                                        <SelectValue placeholder="Select experience level" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {experienceLevels.map((level) => (
+                                        <SelectItem key={level.value} value={level.value}>
+                                          <div className="flex items-center">
+                                            {level.icon}
+                                            <span className="ml-2">{level.label}</span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage
+                                    id="primaryActivity3-experienceLevel-error"
+                                    role="alert"
+                                  />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </MotionDiv>
+                )}
+              </AnimatePresence>
             </div>
           </TabsContent>
-
           <TabsContent value="fitness" className="space-y-6 pt-4">
             <div className="space-y-4 rounded-lg bg-primary/5 p-4">
               <div className="flex items-center justify-between">
@@ -548,24 +669,34 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                 This information helps personalize activity recommendations to your fitness level
               </p>
             </div>
-
             <FormField
-              control={form.control}
+              control={methods.control}
               name="fitnessLevel"
               render={({ field }) => (
                 <FormItem className="space-y-4">
                   <FormLabel>Overall Fitness Level</FormLabel>
+                  <FormDescription>
+                    Select your current fitness level for more accurate recommendations.
+                  </FormDescription>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {fitnessLevels.map((level) => (
                       <Card
                         key={level.value}
                         className={cn(
-                          "cursor-pointer transition-colors",
+                          "cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary",
                           field.value === level.value
                             ? "border-primary bg-primary/5"
                             : "hover:bg-accent"
                         )}
+                        tabIndex={0}
+                        role="button"
+                        aria-pressed={field.value === level.value}
                         onClick={() => field.onChange(level.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            field.onChange(level.value);
+                          }
+                        }}
                       >
                         <CardContent className="flex flex-col items-center space-y-2 p-4 text-center">
                           <div
@@ -586,96 +717,65 @@ export function AthleteSportsActivityForm({ onNext, onBack }: AthleteSportsActiv
                       </Card>
                     ))}
                   </div>
-                  <FormMessage />
+                  <FormMessage role="alert" />
                 </FormItem>
               )}
             />
-
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <FormField
-                control={form.control}
-                name="height.value"
+                control={methods.control}
+                name="height"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Height (Optional)</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Height"
-                          {...field}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                        />
-                      </FormControl>
-                      <FormField
-                        control={form.control}
-                        name="height.unit"
-                        render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value || "cm"}>
-                            <FormControl>
-                              <SelectTrigger className="w-24">
-                                <SelectValue placeholder="Unit" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="cm">cm</SelectItem>
-                              <SelectItem value="feet">feet</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
+                    <FormLabel>Height (cm) - Optional</FormLabel>
+                    <FormDescription>
+                      Enter your height in centimeters for better recommendations.
+                    </FormDescription>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Height in cm"
+                        {...field}
+                        aria-invalid={!!formState.errors.height}
+                        aria-describedby="height-error"
                       />
-                    </div>
-                    <FormMessage />
+                    </FormControl>
+                    <FormMessage id="height-error" role="alert" />
                   </FormItem>
                 )}
               />
-
               <FormField
-                control={form.control}
-                name="weight.value"
+                control={methods.control}
+                name="weight"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Weight (Optional)</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Weight"
-                          {...field}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                        />
-                      </FormControl>
-                      <FormField
-                        control={form.control}
-                        name="weight.unit"
-                        render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value || "kg"}>
-                            <FormControl>
-                              <SelectTrigger className="w-24">
-                                <SelectValue placeholder="Unit" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="kg">kg</SelectItem>
-                              <SelectItem value="lbs">lbs</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
+                    <FormLabel>Weight (kg) - Optional</FormLabel>
+                    <FormDescription>
+                      Enter your weight in kilograms for better recommendations.
+                    </FormDescription>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Weight in kg"
+                        {...field}
+                        aria-invalid={!!formState.errors.weight}
+                        aria-describedby="weight-error"
                       />
-                    </div>
-                    <FormMessage />
+                    </FormControl>
+                    <FormMessage id="weight-error" role="alert" />
                   </FormItem>
                 )}
               />
             </div>
           </TabsContent>
         </Tabs>
-
         <div className="flex justify-between pt-2">
           <Button type="button" variant="outline" onClick={onBack}>
             Back
           </Button>
-          <Button type="submit">Continue</Button>
+          <Button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Continue"}
+          </Button>
         </div>
       </form>
     </Form>

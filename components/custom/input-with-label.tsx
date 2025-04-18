@@ -1,6 +1,13 @@
 "use client";
 
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
@@ -9,12 +16,14 @@ import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 
 type Props<S> = {
+  description?: string;
   fieldTitle?: string;
   nameInSchema: keyof S & string;
   className?: string;
 } & InputHTMLAttributes<HTMLInputElement>;
 
 export function InputWithLabel<S>({
+  description,
   fieldTitle,
   nameInSchema,
   className,
@@ -34,10 +43,11 @@ export function InputWithLabel<S>({
       render={({ field }) => (
         <FormItem className="flex-1">
           {fieldTitle && (
-            <FormLabel className="" htmlFor={nameInSchema}>
+            <FormLabel className="mb-2" htmlFor={nameInSchema}>
               {fieldTitle}
             </FormLabel>
           )}
+          {description && <FormDescription>{description}</FormDescription>}
           <FormControl>
             <div className="relative">
               <Input
