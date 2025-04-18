@@ -21,7 +21,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { formatUTCForDisplay, parseDateToUTC } from "@/lib/utils/date";
+import { formatUTCForDisplay } from "@/lib/utils/date";
 import type { CaptionLabelProps, MonthGridProps } from "react-day-picker";
 
 type Props<S> = {
@@ -229,11 +229,10 @@ export function DatePickerWithLabel<S>({
                 selected={field.value ? new Date(field.value) : undefined}
                 onSelect={(date) => {
                   if (date) {
-                    // Convert the selected date to UTC before storing
-                    const utcDate = parseDateToUTC(date.toISOString());
-                    field.onChange(utcDate);
+                    // Store the date object directly without conversion
+                    field.onChange(date);
                   } else {
-                    field.onChange("");
+                    field.onChange(undefined);
                   }
                 }}
                 month={month}

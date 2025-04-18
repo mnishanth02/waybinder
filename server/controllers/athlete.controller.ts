@@ -1,12 +1,9 @@
-import type {
-  AthleteOnboardingFormValues,
-  AthleteUpdateFormValues,
-} from "@/lib/validations/athlete-onboarding";
 import { ApiStatusCode } from "@/types/api";
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { db } from "../db";
 import { athleteProfiles } from "../db/schema";
+import type { NewAthleteProfileType } from "../db/schema/athlete-schema";
 
 /**
  * @api {post} /athletes Create Athlete
@@ -14,18 +11,17 @@ import { athleteProfiles } from "../db/schema";
  * @access Private
  */
 export const createAthlete = async (c: Context) => {
-  const body = (await c.req.json()) as AthleteOnboardingFormValues;
-  const newAthlete = await db.insert(athleteProfiles).values({
-    userId: c.get("user").id,
-    athleteUniqueId: body.basicInfo.email,
-    firstName: body.basicInfo.firstName,
-    lastName: body.basicInfo.lastName,
-    email: body.basicInfo.email,
-    gender: body.basicInfo.gender,
-    ...body,
-  });
+  const body = (await c.req.json()) as NewAthleteProfileType;
 
-  return c.json(newAthlete, ApiStatusCode.CREATED);
+  const newAthlete = await db.insert(athleteProfiles).values(body);
+  return c.json(
+    {
+      success: true,
+      message: "Athlete created successfully",
+      data: newAthlete,
+    },
+    ApiStatusCode.CREATED
+  );
 };
 
 /**
@@ -118,7 +114,7 @@ export const getMyAthleteProfile = async (c: Context) => {
 export const updateAthlete = async (c: Context) => {
   const id = c.req.param("id");
   const user = c.get("user");
-  const body = (await c.req.json()) as AthleteUpdateFormValues;
+  const updateData = (await c.req.json()) as Partial<NewAthleteProfileType>;
 
   // Find the athlete to verify ownership
   const athlete = await db.query.athleteProfiles.findFirst({
@@ -148,23 +144,12 @@ export const updateAthlete = async (c: Context) => {
     );
   }
 
-  // Prepare update data while preserving existing structure
-  const updateData = {
-    ...body,
-    updatedAt: new Date(),
-  };
-
-  // Update athlete profile
+  // Update athlete profile with the updatedAt timestamp
   const updatedAthlete = await db
     .update(athleteProfiles)
     .set(updateData)
     .where(eq(athleteProfiles.id, id))
     .returning();
-
-  // Fetch the updated athlete profile
-  // const updatedAthlete = await db.query.athleteProfiles.findFirst({
-  //     where: eq(athleteProfiles.id, id)
-  // });
 
   return c.json({
     success: true,

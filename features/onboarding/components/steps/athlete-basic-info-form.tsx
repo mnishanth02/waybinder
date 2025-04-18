@@ -102,6 +102,7 @@ export function AthleteBasicInfoForm({ onNext }: AthleteBasicInfoFormProps) {
 
   // Replace onSubmit with local handler
   const handleSubmit = (values: BasicInfoFormValues) => {
+    // Pass the date directly to the store, it will handle the serialization
     updateBasicInfo({
       ...values,
       profileImageUrl: profileImagePreview || "",

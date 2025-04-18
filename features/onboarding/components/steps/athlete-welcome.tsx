@@ -1,16 +1,17 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { CardFooter } from "@/components/ui/card";
-import { useAthleteOnboarding } from "@/features/onboarding/hooks/use-athlete-onboarding";
+import { useCreateAthlete } from "@/features/onboarding/hooks/use-athlete-queries";
 import { useAthleteOnboardingStore } from "@/features/onboarding/store/athlete-onboarding-store";
 import { CheckCircle2 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export function AthleteWelcome() {
+  const router = useRouter();
   const basicInfo = useAthleteOnboardingStore((state) => state.basicInfo);
   const sportsActivity = useAthleteOnboardingStore((state) => state.sportsActivity);
   const additionalInfo = useAthleteOnboardingStore((state) => state.additionalInfo);
-  const { mutate, isPending } = useAthleteOnboarding();
 
   const profileImageUrl =
     basicInfo.profileImageUrl ||
@@ -19,8 +20,23 @@ export function AthleteWelcome() {
     basicInfo.coverPhotoUrl ||
     (basicInfo.coverPhoto ? URL.createObjectURL(basicInfo.coverPhoto) : undefined);
 
+  const { mutate: createAthlete, isPending } = useCreateAthlete({
+    onSuccess: () => {
+      router.push("/admin");
+    },
+  });
+
   const handleComplete = () => {
-    mutate({ basicInfo, sportsActivity, additionalInfo });
+    if (isPending) return;
+
+    // Prepare data from the onboarding store in the expected format
+    const athleteData = {
+      basicInfo,
+      sportsActivity,
+      additionalInfo,
+    };
+    // Call the API to create the athlete profile
+    createAthlete(athleteData);
   };
 
   return (

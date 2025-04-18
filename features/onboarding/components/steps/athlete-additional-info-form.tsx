@@ -85,7 +85,6 @@ const isValidURL = (url: string): boolean => {
 };
 
 export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalInfoFormProps) {
-  console.log("AthleteAdditionalInfoForm rendered");
   const updateAdditionalInfo = useAthleteOnboardingStore((state) => state.updateAdditionalInfo);
   const additionalInfo = useAthleteOnboardingStore((state) => state.additionalInfo);
   const [activeTab, setActiveTab] = useState("profile");
@@ -262,18 +261,14 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
   // Form submission handler (SUCCESS case)
   const handleFormSubmit = (values: AdditionalInfoFormValues) => {
     setIsSubmitting(true);
-    console.log("handleSubmit SUCCESS", values);
 
     try {
       updateAdditionalInfo(values);
       toast.success("Information saved successfully");
-      console.log("Calling onNext()");
       onNext();
-      console.log("onNext() called");
     } catch (e) {
       const error = e as Error;
       toast.error(`There was a problem saving your information: ${error.message}`);
-      console.log("Error saving data:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -281,7 +276,6 @@ export function AthleteAdditionalInfoForm({ onNext, onBack }: AthleteAdditionalI
 
   // Form submission handler (ERROR case)
   const handleFormError = (errors: FieldErrors<AdditionalInfoFormValues>) => {
-    console.log("handleSubmit ERROR (Validation Failed)", errors);
     setIsSubmitting(false);
     toast.error("Please fix the errors in the form.");
 

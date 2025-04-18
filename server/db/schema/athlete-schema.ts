@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { date, index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import { users } from "./auth-schema"; // Import users table for relationship
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { users } from "./auth-schema";
 import { bloodGroupEnum, fitnessLevelEnum, genderEnum } from "./enum";
 
 export const athleteProfiles = pgTable(
@@ -75,13 +76,17 @@ export const athleteProfiles = pgTable(
   ]
 );
 
-// Optional: Define a type for easier usage in your application
-export type AthleteProfile = typeof athleteProfiles.$inferSelect;
-export type NewAthleteProfile = typeof athleteProfiles.$inferInsert;
-
 export const athleteProfilesRelations = relations(athleteProfiles, ({ one }) => ({
   user: one(users, {
     fields: [athleteProfiles.userId],
     references: [users.id],
   }),
 }));
+
+// Create base Zod validation schemas from Drizzle schema
+export const selectAthleteSchema = createSelectSchema(athleteProfiles);
+export const insertAthleteSchema = createInsertSchema(athleteProfiles);
+
+// Define a type for easier usage in your application
+export type AthleteProfileType = typeof athleteProfiles.$inferSelect;
+export type NewAthleteProfileType = typeof athleteProfiles.$inferInsert;

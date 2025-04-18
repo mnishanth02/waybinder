@@ -1,4 +1,3 @@
-import { athleteOnboardingSchema, athleteUpdateSchema } from "@/lib/validations/athlete-onboarding";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -11,6 +10,7 @@ import {
   getMyAthleteProfile,
   updateAthlete,
 } from "../controllers/athlete.controller";
+import { insertAthleteSchema } from "../db/schema/athlete-schema";
 import { protect } from "../middleware/auth.middleware";
 
 // ID parameter validation
@@ -24,12 +24,12 @@ const athleteRouter = new Hono()
   .get("/me", protect, getMyAthleteProfile)
   .get("/unique/:id", zValidator("param", idParamSchema), getAthleteByUniqueId)
   .get("/:id", zValidator("param", idParamSchema), getAthleteById)
-  .post("/", protect, zValidator("json", athleteOnboardingSchema), createAthlete)
+  .post("/", protect, zValidator("json", insertAthleteSchema), createAthlete)
   .put(
     "/:id",
     protect,
     zValidator("param", idParamSchema),
-    zValidator("json", athleteUpdateSchema),
+    zValidator("json", insertAthleteSchema.partial()),
     updateAthlete
   )
   .delete("/:id", protect, zValidator("param", idParamSchema), deleteAthlete);
