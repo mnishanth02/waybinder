@@ -30,10 +30,69 @@ export const createAthlete = async (c: Context) => {
  * @access Public
  */
 export const getAthletes = async (c: Context) => {
-  const allAthletes = await db.query.athleteProfiles.findMany();
+  // Get query parameters with defaults
+  const limit = Number(c.req.query("limit") || "10");
+  const page = Number(c.req.query("page") || "1");
+  const activity = c.req.query("activity")?.trim();
+  const fitnessLevel = c.req.query("fitnessLevel");
+  const search = c.req.query("search")?.trim();
+
+  // Calculate offset for pagination
+  const offset = (page - 1) * limit;
+
+  // Get all athletes first (we'll filter in memory for complex json fields)
+  let athletes = await db.query.athleteProfiles.findMany({
+    orderBy: [athleteProfiles.updatedAt],
+  });
+
+  // Filter for activity (JSON fields)
+  if (activity) {
+    athletes = athletes.filter((athlete) => {
+      // Check all activity fields
+      const activities = [
+        athlete.primaryActivity1?.activity,
+        athlete.primaryActivity2?.activity,
+        athlete.primaryActivity3?.activity,
+      ];
+      return activities.some((act) => act?.toLowerCase().includes(activity.toLowerCase()));
+    });
+  }
+
+  // Filter by fitness level
+  if (fitnessLevel) {
+    athletes = athletes.filter((athlete) => athlete.fitnessLevel === fitnessLevel);
+  }
+
+  // Filter by search
+  if (search) {
+    const searchLower = search.toLowerCase();
+    athletes = athletes.filter((athlete) => {
+      // Check name fields and location
+      return (
+        athlete.firstName?.toLowerCase().includes(searchLower) ||
+        athlete.lastName?.toLowerCase().includes(searchLower) ||
+        athlete.displayName?.toLowerCase().includes(searchLower) ||
+        athlete.location?.toLowerCase().includes(searchLower)
+      );
+    });
+  }
+
+  // Get total count for pagination
+  const totalCount = athletes.length;
+  const totalPages = Math.ceil(totalCount / limit);
+
+  // Apply pagination in memory
+  const paginatedAthletes = athletes.slice(offset, offset + limit);
+
   return c.json({
     success: true,
-    data: allAthletes,
+    data: paginatedAthletes,
+    meta: {
+      total: totalCount,
+      page,
+      limit,
+      pages: totalPages,
+    },
   });
 };
 
