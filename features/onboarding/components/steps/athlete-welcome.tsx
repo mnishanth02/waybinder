@@ -18,13 +18,7 @@ export function AthleteWelcome() {
     basicInfo.coverPhotoUrl ||
     (basicInfo.coverPhoto ? URL.createObjectURL(basicInfo.coverPhoto) : undefined);
 
-  const { mutate: createAthlete, isPending } = useCreateAthlete({
-    onSuccess: (data) => {
-      console.log("Final returned data from API ->", data);
-    },
-    redirectPath: "/admin",
-    transformResponse: true,
-  });
+  const { mutate: createAthlete, isPending } = useCreateAthlete();
 
   const handleComplete = () => {
     if (isPending) return;

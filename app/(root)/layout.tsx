@@ -3,13 +3,13 @@ import { cn } from "@/lib/utils";
 export const metadata = {
   title: {
     template: "%s | WayBinder",
-    default: "Athlete Onboarding | WayBinder",
+    default: "WayBinder",
   },
   description:
-    "Complete your athlete profile to start sharing your outdoor adventures with explorers worldwide",
+    "WayBinder is a platform for outdoor enthusiasts to share their adventures and connect with others. It's a place to find new trails, share your own, and get inspired by the beauty of nature.",
 };
 
-const OnboardingLayout = async ({ children }: { children: React.ReactNode }) => {
+const RootLayout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       className={cn(
@@ -21,4 +21,4 @@ const OnboardingLayout = async ({ children }: { children: React.ReactNode }) => 
   );
 };
 
-export default OnboardingLayout;
+export default RootLayout;

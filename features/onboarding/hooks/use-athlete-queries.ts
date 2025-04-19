@@ -156,9 +156,8 @@ export const useCreateAthlete = (options?: {
         options.onSuccess(callbackData);
       }
 
-      if (options?.redirectPath) {
-        router.push(options.redirectPath);
-      }
+      const athleteRedirect = `/athlete/${data.uniqueId}`;
+      router.push(athleteRedirect);
     },
     onError: (error) => {
       toast.error(`Failed to create athlete profile: ${error.message}`);

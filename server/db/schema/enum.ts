@@ -1,6 +1,7 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
 // Define enums for structured data
+export const userRoleEnum = pgEnum("user_role", ["admin", "user", "athlete"]);
 export const genderEnum = pgEnum("gender", ["male", "female", "non-binary", "prefer-not-to-say"]);
 export const fitnessLevelEnum = pgEnum("fitness_level", ["beginner", "intermediate", "advanced"]);
 export const experienceLevelEnum = pgEnum("experience_level", [

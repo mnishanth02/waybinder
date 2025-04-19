@@ -256,7 +256,7 @@ export const getMyAthleteProfile = async (): Promise<AthleteOnboardingFormValues
 /**
  * Create a new athlete profile
  */
-export const createAthlete = async (data: AthleteOnboardingFormValues): Promise<unknown> => {
+export const createAthlete = async (data: AthleteOnboardingFormValues) => {
   // Validate required fields from the form
   if (!data.basicInfo?.firstName || !data.basicInfo?.lastName || !data.basicInfo?.email) {
     throw new Error("First name, last name, and email are required fields");

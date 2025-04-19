@@ -2,7 +2,7 @@ import { ApiStatusCode } from "@/types/api";
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { db } from "../db";
-import { athleteProfiles } from "../db/schema";
+import { athleteProfiles, users } from "../db/schema";
 import type { NewAthleteProfileType } from "../db/schema/athlete-schema";
 
 /**
@@ -16,17 +16,18 @@ export const createAthlete = async (c: Context) => {
 
   body.userId = user.id;
 
-  await db.insert(athleteProfiles).values(body);
-
-  const newAthlete = await db.query.athleteProfiles.findFirst({
-    where: eq(athleteProfiles.userId, user.id),
+  await db.transaction(async (tx) => {
+    await Promise.all([
+      tx.insert(athleteProfiles).values(body),
+      tx.update(users).set({ role: "athlete" }).where(eq(users.id, user.id)),
+    ]);
   });
 
   return c.json(
     {
       success: true,
       message: "Athlete created successfully",
-      data: newAthlete,
+      data: { uniqueId: body.athleteUniqueId },
     },
     ApiStatusCode.CREATED
   );
