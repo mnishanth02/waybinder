@@ -37,16 +37,11 @@ const steps: Step[] = [
 ];
 
 export function AthleteOnboardingForm() {
-  // Only get currentStepIndex and setCurrentStepIndex from the store
-  const { currentStepIndex, setCurrentStepIndex } = useAthleteOnboardingStore();
-
-  // For hydration safety, track if component is mounted
   const isMounted = useMounted();
-
+  const { currentStepIndex, setCurrentStepIndex } = useAthleteOnboardingStore();
   const totalSteps = steps.length;
   const step = steps[currentStepIndex];
 
-  // Navigation functions (memoized to prevent unnecessary re-renders)
   const next = useCallback(() => {
     if (currentStepIndex < totalSteps - 1) {
       setCurrentStepIndex(currentStepIndex + 1);

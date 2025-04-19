@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import { date, index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { users } from "./auth-schema";
@@ -75,13 +74,6 @@ export const athleteProfiles = pgTable(
     index("athlete_profiles_primary_activity2_idx").on(t.primaryActivity2), // Index for faster primary activity lookups
   ]
 );
-
-export const athleteProfilesRelations = relations(athleteProfiles, ({ one }) => ({
-  user: one(users, {
-    fields: [athleteProfiles.userId],
-    references: [users.id],
-  }),
-}));
 
 // Create base Zod validation schemas from Drizzle schema
 export const selectAthleteSchema = createSelectSchema(athleteProfiles);

@@ -135,3 +135,37 @@ export const getProfile = async (c: Context) => {
     data: profile,
   });
 };
+
+/**
+ * @api {get} /users/:id/athlete Get User with Athlete Profile
+ * @apiGroup Users
+ * @access Private
+ */
+export const getUserWithAthleteProfile = async (c: Context) => {
+  const userId = c.req.param("id");
+
+  // Find the user with the athlete profile in a single query using the relation
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    with: {
+      athleteProfile: true,
+    },
+  });
+
+  if (!user) {
+    return c.json(
+      {
+        success: false,
+        message: "User not found",
+        error: "No user found with the provided ID",
+      },
+      ApiStatusCode.NOT_FOUND
+    );
+  }
+
+  // Return both user and athlete profile data
+  return c.json({
+    success: true,
+    data: user,
+  });
+};
