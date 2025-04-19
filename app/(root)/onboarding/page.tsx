@@ -1,4 +1,5 @@
 import Loader from "@/components/common/loader";
+import { getUserWithAthleteUsingFetch } from "@/features/auth/api/auth-server-api";
 import { AthleteOnboardingForm } from "@/features/onboarding/components/athlete-onboarding-form";
 import { auth } from "@/server/auth";
 import { headers } from "next/headers";
@@ -19,16 +20,24 @@ export default async function OnboardingPage() {
     redirect("/auth/sign-in");
   }
 
+  const user = await getUserWithAthleteUsingFetch(session.user.id);
+
+  if (user?.athleteProfile?.athleteUniqueId) {
+    redirect(`/athlete/${user.athleteProfile.athleteUniqueId}`);
+  }
+
   return (
-    <div className="container mx-auto max-w-5xl p-4">
-      <div className="mb-4 text-center">
-        <h1 className="font-bold text-2xl md:text-3xl lg:text-4xl">Join the Waybinder Community</h1>
-      </div>
-      <div className="rounded-xl border bg-card shadow-sm">
-        <Suspense fallback={<Loader />}>
+    <Suspense fallback={<Loader />}>
+      <div className="container mx-auto max-w-5xl p-4">
+        <div className="mb-4 text-center">
+          <h1 className="font-bold text-2xl md:text-3xl lg:text-4xl">
+            Join the Waybinder Community
+          </h1>
+        </div>
+        <div className="rounded-xl border bg-card shadow-sm">
           <AthleteOnboardingForm />
-        </Suspense>
+        </div>
       </div>
-    </div>
+    </Suspense>
   );
 }

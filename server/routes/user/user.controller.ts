@@ -147,8 +147,22 @@ export const getUserWithAthleteProfile = async (c: Context) => {
   // Find the user with the athlete profile in a single query using the relation
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
+    columns: {
+      name: true,
+      email: true,
+      isAdmin: true,
+      role: true,
+    },
     with: {
-      athleteProfile: true,
+      athleteProfile: {
+        columns: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          athleteUniqueId: true,
+          email: true,
+        },
+      },
     },
   });
 
