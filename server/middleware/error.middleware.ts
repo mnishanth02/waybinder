@@ -25,6 +25,6 @@ export const notFound: NotFoundHandler = (c) => {
       success: false,
       message: `Not Found - [${c.req.method}]:[${c.req.url}]`,
     },
-    404 // Explicitly set 404 status
+    404 as ContentfulStatusCode // Explicitly set 404 status
   );
 };

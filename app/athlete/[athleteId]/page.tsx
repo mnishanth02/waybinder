@@ -1,5 +1,6 @@
-import { AthleteNotFoundError, getAthleteByUniqueId } from "@/features/onboarding/api";
+import { getAthleteByUniqueId } from "@/features/onboarding/api";
 import { athleteKeys } from "@/features/onboarding/hooks/query-keys";
+import { AthleteNotFoundError } from "@/lib/errors/athlete-error";
 import { getQueryClient } from "@/lib/utils/get-query-client";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { redirect } from "next/navigation";

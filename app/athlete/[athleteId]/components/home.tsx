@@ -1,7 +1,7 @@
 "use client";
 import Loader from "@/components/common/loader";
-import { AthleteNotFoundError } from "@/features/onboarding/api";
 import { useGetAthleteByUniqueId } from "@/features/onboarding/hooks";
+import { AthleteNotFoundError } from "@/lib/errors/athlete-error";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
