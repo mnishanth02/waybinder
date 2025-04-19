@@ -5,10 +5,8 @@ import { useCreateAthlete } from "@/features/onboarding/hooks/use-athlete-querie
 import { useAthleteOnboardingStore } from "@/features/onboarding/store/athlete-onboarding-store";
 import { CheckCircle2 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 
 export function AthleteWelcome() {
-  const router = useRouter();
   const basicInfo = useAthleteOnboardingStore((state) => state.basicInfo);
   const sportsActivity = useAthleteOnboardingStore((state) => state.sportsActivity);
   const additionalInfo = useAthleteOnboardingStore((state) => state.additionalInfo);
@@ -21,9 +19,11 @@ export function AthleteWelcome() {
     (basicInfo.coverPhoto ? URL.createObjectURL(basicInfo.coverPhoto) : undefined);
 
   const { mutate: createAthlete, isPending } = useCreateAthlete({
-    onSuccess: () => {
-      router.push("/admin");
+    onSuccess: (data) => {
+      console.log("Final returned data from API ->", data);
     },
+    redirectPath: "/admin",
+    transformResponse: true,
   });
 
   const handleComplete = () => {

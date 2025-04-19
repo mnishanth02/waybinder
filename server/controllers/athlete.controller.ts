@@ -11,9 +11,17 @@ import type { NewAthleteProfileType } from "../db/schema/athlete-schema";
  * @access Private
  */
 export const createAthlete = async (c: Context) => {
+  const user = c.get("user");
   const body = (await c.req.json()) as NewAthleteProfileType;
 
-  const newAthlete = await db.insert(athleteProfiles).values(body);
+  body.userId = user.id;
+
+  await db.insert(athleteProfiles).values(body);
+
+  const newAthlete = await db.query.athleteProfiles.findFirst({
+    where: eq(athleteProfiles.userId, user.id),
+  });
+
   return c.json(
     {
       success: true,

@@ -44,6 +44,7 @@ const athleteQuerySchema = z.object({
 // Create specific validation schemas for different operations
 const createAthleteSchema = insertAthleteSchema.omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
 });

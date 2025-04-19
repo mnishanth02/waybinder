@@ -1,11 +1,9 @@
-import { useSession } from "@/lib/auth-client";
 import type {
   AthleteOnboardingFormValues,
   AthleteUpdateFormValues,
 } from "@/lib/validations/athlete-onboarding";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import React from "react";
 import { toast } from "sonner";
 import {
   createAthlete,
@@ -89,7 +87,7 @@ export const transformFlatToNested = (flatData: any): AthleteOnboardingFormValue
 export const useGetAthletes = () => {
   return useQuery({
     queryKey: athleteKeys.lists(),
-    queryFn: getAthletes,
+    queryFn: () => getAthletes(),
   });
 };
 
@@ -141,20 +139,11 @@ export const useCreateAthlete = (options?: {
   transformResponse?: boolean; // Option to transform the response back to form structure
 }) => {
   const queryClient = useQueryClient();
-  const { data: session } = useSession();
   const router = useRouter();
 
-  // Create a memoized mutation function that checks for session at execution time
-  const mutationFn = React.useCallback(
-    (data: AthleteOnboardingFormValues) => {
-      // Check for user ID at the time of mutation execution
-      if (!session?.user?.id) {
-        throw new Error("User ID is required to create an athlete profile");
-      }
-      return createAthlete(data, session.user.id);
-    },
-    [session]
-  );
+  const mutationFn = (data: AthleteOnboardingFormValues) => {
+    return createAthlete(data);
+  };
 
   return useMutation({
     mutationFn,
@@ -162,14 +151,11 @@ export const useCreateAthlete = (options?: {
       toast.success("Athlete profile created successfully");
       queryClient.invalidateQueries({ queryKey: athleteKeys.all });
 
-      // Execute additional success callback if provided
       if (options?.onSuccess) {
-        // Transform data if requested
         const callbackData = options.transformResponse ? transformFlatToNested(data) : data;
         options.onSuccess(callbackData);
       }
 
-      // Redirect if a path is provided
       if (options?.redirectPath) {
         router.push(options.redirectPath);
       }
