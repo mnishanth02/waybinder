@@ -1,6 +1,7 @@
 import { client } from "@/lib/hono-client";
+import type { User, UserWithAthleteProfile } from "../types/user";
 
-export const getUserById = async (id: string) => {
+export const getUserById = async (id: string): Promise<User> => {
   const response = await client.api.user[":id"].$get({
     param: { id },
   });
@@ -19,7 +20,7 @@ export const getUserById = async (id: string) => {
   return data.data;
 };
 
-export const getUserWithAthlete = async (id: string) => {
+export const getUserWithAthlete = async (id: string): Promise<UserWithAthleteProfile> => {
   const response = await client.api.user[":id"].athlete.$get({
     param: { id },
   });
