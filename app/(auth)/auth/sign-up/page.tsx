@@ -1,4 +1,4 @@
-import SignUpForm from "@/app/(auth)/auth/sign-up/signup-form";
+import SignUpForm from "@/features/auth/components/signup-form";
 
 const SignUpPage = async () => {
   return <SignUpForm />;

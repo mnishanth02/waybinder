@@ -1,9 +1,9 @@
 import { ApiStatusCode } from "@/types/api";
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
-import { db } from "../db";
-import { athleteProfiles, users } from "../db/schema";
-import type { NewAthleteProfileType } from "../db/schema/athlete-schema";
+import { db } from "../../db";
+import { athleteProfiles, users } from "../../db/schema";
+import type { NewAthleteProfileType } from "../../db/schema/athlete-schema";
 
 /**
  * @api {post} /athletes Create Athlete

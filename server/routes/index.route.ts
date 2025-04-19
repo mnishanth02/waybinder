@@ -1,2 +1,2 @@
-export { default as User } from "./user.route";
-export { default as Athlete } from "./athlete.route";
+export { default as User } from "./user/user.route";
+export { default as Athlete } from "./athlete/athlete.route";

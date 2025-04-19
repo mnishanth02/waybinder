@@ -1,8 +1,8 @@
+import { db } from "@/server/db";
+import { users } from "@/server/db/schema";
 import { ApiStatusCode } from "@/types/api";
 import type { Context } from "@/types/server";
 import { eq } from "drizzle-orm";
-import { db } from "../db";
-import { users } from "../db/schema";
 
 /**
  * @api {get} /users Get All Users

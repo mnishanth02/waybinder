@@ -1,6 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
+import { insertAthleteSchema } from "../../db/schema/athlete-schema";
+import { protect } from "../../middleware/auth.middleware";
 import {
   createAthlete,
   deleteAthlete,
@@ -9,9 +11,7 @@ import {
   getAthletes,
   getMyAthleteProfile,
   updateAthlete,
-} from "../controllers/athlete.controller";
-import { insertAthleteSchema } from "../db/schema/athlete-schema";
-import { protect } from "../middleware/auth.middleware";
+} from "./athlete.controller";
 
 // ===== Validation schemas =====
 
