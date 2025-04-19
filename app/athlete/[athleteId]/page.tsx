@@ -1,3 +1,9 @@
+import { getAthleteByUniqueId } from "@/features/onboarding/hooks/api";
+import { athleteKeys } from "@/features/onboarding/hooks/query-keys";
+import { getQueryClient } from "@/lib/utils/get-query-client";
+import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
+import AthleteHome from "./components/home";
+
 interface AthletePageProps {
   params: Promise<{ athleteId: string }>;
 }
@@ -5,7 +11,18 @@ interface AthletePageProps {
 const AthletePage = async ({ params }: AthletePageProps) => {
   const { athleteId } = await params;
 
-  return <div>AthletePage - {athleteId}</div>;
+  const queryClient = getQueryClient();
+
+  await queryClient.prefetchQuery({
+    queryKey: athleteKeys.unique(athleteId),
+    queryFn: () => getAthleteByUniqueId(athleteId),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <AthleteHome athleteId={athleteId} />
+    </HydrationBoundary>
+  );
 };
 
 export default AthletePage;

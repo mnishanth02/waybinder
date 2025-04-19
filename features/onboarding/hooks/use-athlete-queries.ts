@@ -1,3 +1,4 @@
+"use client";
 import type {
   AthleteOnboardingFormValues,
   AthleteUpdateFormValues,
@@ -14,17 +15,7 @@ import {
   getMyAthleteProfile,
   updateAthlete,
 } from "./api/athlete-api";
-
-// Query keys for athletes - for consistent cache management
-export const athleteKeys = {
-  all: ["athletes"] as const,
-  lists: () => [...athleteKeys.all, "list"] as const,
-  list: (filters: string) => [...athleteKeys.lists(), { filters }] as const,
-  details: () => [...athleteKeys.all, "detail"] as const,
-  detail: (id: string) => [...athleteKeys.details(), id] as const,
-  me: () => [...athleteKeys.all, "me"] as const,
-  unique: (id: string) => [...athleteKeys.all, "unique", id] as const,
-};
+import { athleteKeys } from "./query-keys";
 
 /**
  * Utility function to transform a flat athlete profile from the API
@@ -96,11 +87,11 @@ export const useGetAthletes = () => {
  * @param id The athlete ID to fetch
  * @returns Query result with athlete data, loading and error states
  */
-export const useGetAthleteById = (id?: string) => {
+export const useGetAthleteById = (id: string) => {
   return useQuery({
-    queryKey: athleteKeys.detail(id || ""),
-    queryFn: () => getAthleteById(id || ""),
-    enabled: Boolean(id), // Only run query if ID is provided
+    queryKey: [athleteKeys.detail(id)],
+    queryFn: () => getAthleteById(id),
+    enabled: Boolean(id),
   });
 };
 
@@ -109,11 +100,11 @@ export const useGetAthleteById = (id?: string) => {
  * @param id The unique ID to fetch
  * @returns Query result with athlete data, loading and error states
  */
-export const useGetAthleteByUniqueId = (id?: string) => {
+export const useGetAthleteByUniqueId = (id: string) => {
   return useQuery({
-    queryKey: athleteKeys.unique(id || ""),
-    queryFn: () => getAthleteByUniqueId(id || ""),
-    enabled: Boolean(id), // Only run query if ID is provided
+    queryKey: [athleteKeys.unique(id)],
+    queryFn: () => getAthleteByUniqueId(id),
+    enabled: Boolean(id),
   });
 };
 
@@ -173,7 +164,7 @@ export const useCreateAthlete = (options?: {
  * @returns Mutation for updating athlete profiles
  */
 export const useUpdateAthlete = (
-  id?: string,
+  id: string,
   options?: {
     onSuccess?: (data: unknown) => void;
     redirectPath?: string;
@@ -184,7 +175,7 @@ export const useUpdateAthlete = (
   const router = useRouter();
 
   return useMutation({
-    mutationFn: (data: AthleteUpdateFormValues) => updateAthlete(id || "", data),
+    mutationFn: (data: AthleteUpdateFormValues) => updateAthlete(id, data),
     onSuccess: (data) => {
       toast.success("Athlete profile updated successfully");
 
@@ -221,7 +212,7 @@ export const useUpdateAthlete = (
  * @returns Mutation for deleting athlete profiles
  */
 export const useDeleteAthlete = (
-  id?: string,
+  id: string,
   options?: {
     onSuccess?: () => void;
     redirectPath?: string;
@@ -231,7 +222,7 @@ export const useDeleteAthlete = (
   const router = useRouter();
 
   return useMutation({
-    mutationFn: () => deleteAthlete(id || ""),
+    mutationFn: () => deleteAthlete(id),
     onSuccess: () => {
       toast.success("Athlete profile deleted successfully");
 

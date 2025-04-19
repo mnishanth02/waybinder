@@ -1,1 +1,9 @@
-export * from "./athlete-api";
+export {
+  getAthletes,
+  getAthleteById,
+  getAthleteByUniqueId,
+  getMyAthleteProfile,
+  createAthlete,
+  updateAthlete,
+  deleteAthlete,
+} from "./athlete-api";
