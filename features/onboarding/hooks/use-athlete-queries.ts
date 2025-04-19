@@ -1,4 +1,5 @@
 "use client";
+import { AthleteNotFoundError } from "@/lib/errors/athlete-error";
 import type {
   AthleteOnboardingFormValues,
   AthleteUpdateFormValues,
@@ -105,6 +106,14 @@ export const useGetAthleteByUniqueId = (id: string) => {
     queryKey: [athleteKeys.unique(id)],
     queryFn: () => getAthleteByUniqueId(id),
     enabled: Boolean(id),
+    retry: (failureCount, error) => {
+      // Don't retry for AthleteNotFoundError
+      if (error instanceof AthleteNotFoundError) {
+        return false;
+      }
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
   });
 };
 

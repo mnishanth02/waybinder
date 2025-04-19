@@ -1,3 +1,4 @@
+import { AthleteNotFoundError } from "@/lib/errors/athlete-error";
 import { client } from "@/lib/hono-client";
 import type {
   AthleteOnboardingFormValues,
@@ -112,7 +113,7 @@ const transformToFlat = (nestedData: AthleteOnboardingFormValues | AthleteUpdate
   const { ...additionalRest } = nestedData.additionalInfo ?? {};
 
   // For create operations, generate a unique ID for the athlete if not provided
-  const athleteUniqueId = `athlete_${nanoid(10)}`;
+  const athleteUniqueId = `${nestedData.basicInfo?.firstName}_${nanoid(10)}`;
 
   const flatData = {
     // Include required fields
@@ -195,15 +196,24 @@ export const getAthleteById = async (id: string): Promise<AthleteOnboardingFormV
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-    throw new Error(
-      errorData ? JSON.stringify(errorData) : `Failed to fetch athlete with ID ${id}`
-    );
+    const errorMessage = errorData
+      ? JSON.stringify(errorData)
+      : `Failed to fetch athlete with ID ${id}`;
+
+    // Check if it's a 404 Not Found error
+    if (response.status === 404) {
+      throw new AthleteNotFoundError(`Athlete with unique ID ${id} not found`, id);
+    }
+
+    // For other HTTP errors
+    throw new Error(errorMessage);
   }
 
   const data = await response.json();
 
+  // Handle API-level errors where HTTP status might be 200 but the operation failed
   if (!data.success || !data.data) {
-    throw new Error(`Athlete with ID ${id} not found in response`);
+    throw new AthleteNotFoundError(`Athlete with unique ID ${id} not found in response`, id);
   }
 
   return transformToNested(data.data);
@@ -211,26 +221,53 @@ export const getAthleteById = async (id: string): Promise<AthleteOnboardingFormV
 
 /**
  * Get athlete by unique ID (non-primary key)
+ * @throws {AthleteNotFoundError} When athlete with the given unique ID is not found
+ * @throws {Error} For other API or network errors
  */
 export const getAthleteByUniqueId = async (id: string): Promise<AthleteOnboardingFormValues> => {
-  const response = await client.api.athlete.unique[":id"].$get({
-    param: { id },
-  });
+  try {
+    const response = await client.api.athlete.unique[":id"].$get({
+      param: { id },
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(
-      errorData ? JSON.stringify(errorData) : `Failed to fetch athlete with unique ID ${id}`
-    );
+    // Handle HTTP error responses
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData
+        ? JSON.stringify(errorData)
+        : `Failed to fetch athlete with unique ID ${id}`;
+
+      // Check if it's a 404 Not Found error
+      if (response.status === 404) {
+        throw new AthleteNotFoundError(`Athlete with unique ID ${id} not found`, id);
+      }
+
+      // For other HTTP errors
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    // Handle API-level errors where HTTP status might be 200 but the operation failed
+    if (!data.success || !data.data) {
+      throw new AthleteNotFoundError(`Athlete with unique ID ${id} not found in response`, id);
+    }
+
+    return transformToNested(data.data);
+  } catch (error) {
+    // Re-throw AthleteNotFoundError as is
+    if (error instanceof AthleteNotFoundError) {
+      throw error;
+    }
+
+    // Convert other errors to AthleteNotFoundError if they seem to be about missing athletes
+    if (error instanceof Error && error.message.includes("not found")) {
+      throw new AthleteNotFoundError(error.message, id);
+    }
+
+    // Otherwise, re-throw the original error
+    throw error;
   }
-
-  const data = await response.json();
-
-  if (!data.success || !data.data) {
-    throw new Error(`Athlete with unique ID ${id} not found in response`);
-  }
-
-  return transformToNested(data.data);
 };
 
 /**
