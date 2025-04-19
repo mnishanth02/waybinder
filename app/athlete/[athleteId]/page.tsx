@@ -1,4 +1,4 @@
-import { getAthleteByUniqueId } from "@/features/onboarding/hooks/api";
+import { getAthleteByUniqueId } from "@/features/onboarding/api";
 import { athleteKeys } from "@/features/onboarding/hooks/query-keys";
 import { getQueryClient } from "@/lib/utils/get-query-client";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";

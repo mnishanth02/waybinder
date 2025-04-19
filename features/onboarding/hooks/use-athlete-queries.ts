@@ -14,7 +14,7 @@ import {
   getAthletes,
   getMyAthleteProfile,
   updateAthlete,
-} from "./api/athlete-api";
+} from "../api/athlete-api";
 import { athleteKeys } from "./query-keys";
 
 /**
