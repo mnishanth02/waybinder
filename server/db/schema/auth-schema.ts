@@ -1,5 +1,7 @@
 import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { userRoleEnum } from "./enum";
+
 export const users = pgTable(
   "users",
   {
@@ -72,3 +74,11 @@ export const verifications = pgTable(
   },
   (t) => [index("identifier_index").on(t.identifier)]
 );
+
+// Create base Zod validation schemas from Drizzle schema
+export const selectUserSchema = createSelectSchema(users);
+export const insertUserSchema = createInsertSchema(users);
+
+// Define a type for easier usage in your application
+export type UserTypeSelect = typeof users.$inferSelect;
+export type UserTypeInsert = typeof users.$inferInsert;

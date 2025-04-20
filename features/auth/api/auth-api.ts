@@ -17,7 +17,14 @@ export const getUserById = async (id: string): Promise<User> => {
     throw new Error("Invalid response from server");
   }
 
-  return data.data;
+  const user: User = {
+    ...data.data,
+    createdAt: new Date(data.data.createdAt),
+    updatedAt: new Date(data.data.updatedAt),
+    banExpires: data.data.banExpires ? new Date(data.data.banExpires) : null,
+  };
+
+  return user;
 };
 
 export const getUserWithAthlete = async (id: string): Promise<UserWithAthleteProfile> => {
@@ -38,6 +45,13 @@ export const getUserWithAthlete = async (id: string): Promise<UserWithAthletePro
     throw new Error("Invalid response from server");
   }
 
-  // The response contains the user object with the athleteProfile property
-  return data.data;
+  const userWithAthlete: UserWithAthleteProfile = {
+    ...data.data,
+
+    athleteProfile: {
+      ...data.data.athleteProfile,
+    },
+  };
+
+  return userWithAthlete;
 };

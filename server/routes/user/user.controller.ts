@@ -156,7 +156,6 @@ export const getUserWithAthleteProfile = async (c: Context) => {
     with: {
       athleteProfile: {
         columns: {
-          id: true,
           firstName: true,
           lastName: true,
           athleteUniqueId: true,
