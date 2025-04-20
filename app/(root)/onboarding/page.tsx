@@ -1,7 +1,7 @@
 import Loader from "@/components/common/loader";
-import { getUserWithAthleteUsingFetch } from "@/features/auth/api/auth-server-api";
 import { AthleteOnboardingForm } from "@/features/onboarding/components/athlete-onboarding-form";
 import { auth } from "@/server/auth";
+import { getAthleteIdByUserId } from "@/server/routes/athlete/athlete.controller";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -20,10 +20,14 @@ export default async function OnboardingPage() {
     redirect("/auth/sign-in");
   }
 
-  const user = await getUserWithAthleteUsingFetch(session.user.id);
+  const response = await getAthleteIdByUserId(session.user.id);
 
-  if (user?.athleteProfile?.athleteUniqueId) {
-    redirect(`/athlete/${user.athleteProfile.athleteUniqueId}`);
+  if (!response.success || !response.data) {
+    return redirect("/");
+  }
+
+  if (response.data.athleteUniqueId) {
+    redirect(`/athlete/${response.data.athleteUniqueId}`);
   }
 
   return (

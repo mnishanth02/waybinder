@@ -1,7 +1,9 @@
+import type { UserTypeSelect } from "@/server/db/schema";
 import { zValidator } from "@/server/lib/validator-wrapper";
+import { ApiStatusCode } from "@/types/api";
 import { Hono } from "hono";
 import { z } from "zod";
-import { insertAthleteSchema } from "../../db/schema/athlete-schema";
+import { type NewAthleteProfileType, insertAthleteSchema } from "../../db/schema/athlete-schema";
 import { protect } from "../../middleware/auth.middleware";
 import {
   createAthlete,
@@ -64,7 +66,13 @@ const athleteRouter = new Hono()
   .get("/unique/:id", zValidator("param", idParamSchema), getAthleteByUniqueId)
   .get("/:id", zValidator("param", idParamSchema), getAthleteById)
   .get("/me", protect, getMyAthleteProfile)
-  .post("/", protect, zValidator("json", createAthleteSchema), createAthlete)
+  .post("/", protect, zValidator("json", createAthleteSchema), async (c) => {
+    const user = c.get("user") as UserTypeSelect;
+    const body = (await c.req.json()) as NewAthleteProfileType;
+    body.userId = user.id;
+    const result = await createAthlete(body);
+    return c.json(result, ApiStatusCode.CREATED);
+  })
   .put(
     "/:id",
     protect,

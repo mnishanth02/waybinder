@@ -10,27 +10,19 @@ import type { NewAthleteProfileType } from "../../db/schema/athlete-schema";
  * @apiGroup Athletes
  * @access Private
  */
-export const createAthlete = async (c: Context) => {
-  const user = c.get("user");
-  const body = (await c.req.json()) as NewAthleteProfileType;
-
-  body.userId = user.id;
-
+export const createAthlete = async (body: NewAthleteProfileType) => {
   await db.transaction(async (tx) => {
     await Promise.all([
       tx.insert(athleteProfiles).values(body),
-      tx.update(users).set({ role: "athlete" }).where(eq(users.id, user.id)),
+      tx.update(users).set({ role: "athlete" }).where(eq(users.id, body.userId)),
     ]);
   });
 
-  return c.json(
-    {
-      success: true,
-      message: "Athlete created successfully",
-      data: { uniqueId: body.athleteUniqueId },
-    },
-    ApiStatusCode.CREATED
-  );
+  return {
+    success: true,
+    message: "Athlete created successfully",
+    data: { uniqueId: body.athleteUniqueId },
+  };
 };
 
 /**
@@ -174,6 +166,26 @@ export const getMyAthleteProfile = async (c: Context) => {
   });
 };
 
+export const getAthleteIdByUserId = async (userId: string) => {
+  // ! Make sure user is already authenticated
+
+  const athlete = await db.query.athleteProfiles.findFirst({
+    where: eq(athleteProfiles.userId, userId),
+  });
+
+  if (!athlete) {
+    return {
+      success: false,
+      message: "Athlete profile not found",
+      error: "No athlete profile found for this user",
+    };
+  }
+
+  return {
+    success: true,
+    data: athlete,
+  };
+};
 /**
  * @api {put} /athletes/:id Update Athlete
  * @apiGroup Athletes

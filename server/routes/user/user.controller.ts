@@ -1,7 +1,6 @@
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
-import { ApiStatusCode } from "@/types/api";
-import type { Context } from "@/types/server";
+import type { User } from "better-auth";
 import { eq } from "drizzle-orm";
 
 /**
@@ -9,12 +8,12 @@ import { eq } from "drizzle-orm";
  * @apiGroup Users
  * @access Private
  */
-export const getUsers = async (c: Context) => {
+export const getUsers = async () => {
   const allUsers = await db.query.users.findMany();
-  return c.json({
+  return {
     success: true,
     data: allUsers,
-  });
+  };
 };
 
 /**
@@ -22,28 +21,23 @@ export const getUsers = async (c: Context) => {
  * @apiGroup Users
  * @access Private
  */
-export const getUserById = async (c: Context) => {
-  const id = c.req.param("id");
-
+export const getUserById = async (id: string) => {
   const user = await db.query.users.findFirst({
     where: eq(users.id, id),
   });
 
   if (!user) {
-    return c.json(
-      {
-        success: false,
-        message: "User not found",
-        error: "No user found with the provided ID",
-      },
-      ApiStatusCode.NOT_FOUND
-    );
+    return {
+      success: false,
+      message: "User not found",
+      error: "No user found with the provided ID",
+    };
   }
 
-  return c.json({
+  return {
     success: true,
     data: user,
-  });
+  };
 };
 
 /**
@@ -51,134 +45,26 @@ export const getUserById = async (c: Context) => {
  * @apiGroup Users
  * @access Private
  */
-export const editProfile = async (c: Context) => {
-  const user = c.get("user");
-  const body = await c.req.json();
+export const editProfile = async (body: User) => {
+  const updateFields: User = {} as User;
 
-  if (!user) {
-    return c.json(
-      {
-        success: false,
-        message: "User not found",
-        error: "User authentication required",
-      },
-      ApiStatusCode.NOT_FOUND
-    );
-  }
-
-  // Create an update object with only the fields that were provided
-  const updateFields: Record<string, string> = {};
-
-  // Only add fields to the update if they exist in the request body
   if (body.name !== "") updateFields.name = body.name;
-  if (body.phone !== "") updateFields.phone = body.phone;
   if (body.image !== "") updateFields.image = body.image;
 
-  // If no fields were provided, return early
   if (Object.keys(updateFields).length === 0) {
-    return c.json(
-      {
-        success: false,
-        message: "No fields to update",
-        error: "At least one field must be provided for update",
-      },
-      ApiStatusCode.BAD_REQUEST
-    );
+    return {
+      success: false,
+      message: "No fields to update",
+      error: "At least one field must be provided for update",
+    };
   }
 
   // Update the user's profile with only the provided fields
-  const updatedProfile = await db.update(users).set(updateFields).where(eq(users.id, user.id));
+  const updatedProfile = await db.update(users).set(updateFields).where(eq(users.id, body.id));
 
-  return c.json({
+  return {
     success: true,
     message: "Profile updated successfully",
     data: updatedProfile,
-  });
-};
-
-/**
- * @api {get} /users/profile Get User Profile
- * @apiGroup Users
- * @access Private
- */
-export const getProfile = async (c: Context) => {
-  const user = c.get("user");
-
-  if (!user) {
-    return c.json(
-      {
-        success: false,
-        message: "User not found",
-        error: "User authentication required",
-      },
-      ApiStatusCode.NOT_FOUND
-    );
-  }
-
-  const profile = await db.query.users.findFirst({
-    where: eq(users.id, user.id),
-  });
-
-  if (!profile) {
-    return c.json(
-      {
-        success: false,
-        message: "Profile not found",
-        error: "No profile found for the user",
-      },
-      ApiStatusCode.NOT_FOUND
-    );
-  }
-
-  return c.json({
-    success: true,
-    data: profile,
-  });
-};
-
-/**
- * @api {get} /users/:id/athlete Get User with Athlete Profile
- * @apiGroup Users
- * @access Private
- */
-export const getUserWithAthleteProfile = async (c: Context) => {
-  const userId = c.req.param("id");
-
-  // Find the user with the athlete profile in a single query using the relation
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-    columns: {
-      name: true,
-      email: true,
-      isAdmin: true,
-      role: true,
-    },
-    with: {
-      athleteProfile: {
-        columns: {
-          firstName: true,
-          lastName: true,
-          athleteUniqueId: true,
-          email: true,
-        },
-      },
-    },
-  });
-
-  if (!user) {
-    return c.json(
-      {
-        success: false,
-        message: "User not found",
-        error: "No user found with the provided ID",
-      },
-      ApiStatusCode.NOT_FOUND
-    );
-  }
-
-  // Return both user and athlete profile data
-  return c.json({
-    success: true,
-    data: user,
-  });
+  };
 };
