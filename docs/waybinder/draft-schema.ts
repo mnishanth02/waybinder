@@ -294,7 +294,7 @@ export const journeys = pgTable(
     privacyStatus: privacyStatusEnum("privacy_status").default("private").notNull(), // Schema 1 name
     coverImageUrl: text("cover_image_url"), // Simple text URL for now
     // coverMediaId: uuid("cover_media_id").references(() => media.id, { onDelete: "set null" }), // Alternative: Link to media table
-    primaryLocationName: text("primary_location_name"), // e.g., "Chamonix Valley, France"
+    location: text("location"), // e.g., "Chamonix Valley, France"
     // Optional derived/cached stats from Schema 2
     totalDistanceKm: real("total_distance_km"), // Use real/float
     totalElevationGainM: real("total_elevation_gain_m"),
