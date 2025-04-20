@@ -1,4 +1,4 @@
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "@/server/lib/validator-wrapper";
 import { Hono } from "hono";
 import { z } from "zod";
 import { insertAthleteSchema } from "../../db/schema/athlete-schema";
