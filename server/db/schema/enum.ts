@@ -21,3 +21,21 @@ export const bloodGroupEnum = pgEnum("blood_group", [
   "O-",
   "unknown",
 ]);
+
+//
+export const journeyTypeEnum = pgEnum("journey_type", [
+  "trekking",
+  "trail_running",
+  "mountaineering",
+  "cycling_touring",
+  "cycling_road",
+  "cycling_mountain",
+  "climbing_expedition",
+  "road_trip",
+  "travel",
+  "weekend_getaway",
+  "single_day_outing",
+  "other",
+]);
+
+export const privacyStatusEnum = pgEnum("privacy_status", ["private", "public"]);

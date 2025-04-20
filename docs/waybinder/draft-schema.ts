@@ -219,7 +219,7 @@ export const users = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull()
-      .$onUpdate(() => new Date()), // Use $onUpdate
+      .$onUpdate(() => new Date()),
     emailVerified: timestamp("email_verified", { withTimezone: true }),
   },
   (table) => ({
