@@ -98,46 +98,6 @@ const transformToNested = (flatData: unknown): AthleteOnboardingFormValues => {
   };
 };
 
-// Transform nested UI form data to a flat structure compatible with backend schema
-const transformToFlat = (nestedData: AthleteOnboardingFormValues | AthleteUpdateFormValues) => {
-  // Extract basic info fields, ensuring required fields are included
-  const { profileImage, coverPhoto, dateOfBirth, ...basicRest } = nestedData.basicInfo ?? {};
-
-  // Ensure dateOfBirth is formatted correctly if it exists, otherwise undefined
-  const formattedDateOfBirth =
-    dateOfBirth instanceof Date
-      ? dateOfBirth.toISOString().split("T")[0] // Format as YYYY-MM-DD string
-      : dateOfBirth; // Keep as string or undefined
-
-  const { ...sportsRest } = nestedData.sportsActivity ?? {};
-  const { ...additionalRest } = nestedData.additionalInfo ?? {};
-
-  // For create operations, generate a unique ID for the athlete if not provided
-  const athleteUniqueId = `${nestedData.basicInfo?.firstName}_${nanoid(10)}`;
-
-  const flatData = {
-    // Include required fields
-    athleteUniqueId,
-
-    // Add the rest of the flattened data
-    ...basicRest,
-    ...sportsRest,
-    ...additionalRest,
-    dateOfBirth: formattedDateOfBirth, // Use the formatted date string
-  };
-
-  // Remove undefined/null properties to avoid sending unnecessary fields
-  const cleanedFlatData: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(flatData)) {
-    if (value !== undefined && value !== null) {
-      cleanedFlatData[key] = value;
-    }
-  }
-
-  return cleanedFlatData;
-};
-
 // Type for getAthletes query parameters to match athleteQuerySchema
 interface GetAthletesParams {
   limit?: number;
@@ -223,8 +183,17 @@ export const getAthleteById = async (id: string): Promise<AthleteOnboardingFormV
  * Get athlete by unique ID (non-primary key)
  * @throws {AthleteNotFoundError} When athlete with the given unique ID is not found
  * @throws {Error} For other API or network errors
+ * @returns {Promise<AthleteOnboardingFormValues | null>} The athlete data or null if not found
  */
-export const getAthleteByUniqueId = async (id: string): Promise<AthleteOnboardingFormValues> => {
+export const getAthleteByUniqueId = async (
+  id: string
+): Promise<AthleteOnboardingFormValues | null> => {
+  // Validate input to prevent unnecessary API calls
+  if (!id) {
+    console.warn("getAthleteByUniqueId called with empty ID");
+    return null;
+  }
+
   try {
     const response = await client.api.athlete.unique[":id"].$get({
       param: { id },
@@ -232,40 +201,49 @@ export const getAthleteByUniqueId = async (id: string): Promise<AthleteOnboardin
 
     // Handle HTTP error responses
     if (!response.ok) {
+      // For 404 errors, return null instead of throwing an error
+      // This allows the page component to handle the not-found case gracefully
+      if (response.status === 404) {
+        console.info(`Athlete with unique ID ${id} not found (404 response)`);
+        return null;
+      }
+
+      // For other HTTP errors, parse the error data if possible
       const errorData = await response.json().catch(() => null);
       const errorMessage = errorData
         ? JSON.stringify(errorData)
         : `Failed to fetch athlete with unique ID ${id}`;
 
-      // Check if it's a 404 Not Found error
-      if (response.status === 404) {
-        throw new AthleteNotFoundError(`Athlete with unique ID ${id} not found`, id);
-      }
-
-      // For other HTTP errors
+      // Throw a general error for non-404 HTTP errors
       throw new Error(errorMessage);
     }
 
+    // Parse the response data
     const data = await response.json();
 
     // Handle API-level errors where HTTP status might be 200 but the operation failed
     if (!data.success || !data.data) {
-      throw new AthleteNotFoundError(`Athlete with unique ID ${id} not found in response`, id);
+      console.info(`Athlete with unique ID ${id} not found (API returned no data)`);
+      return null;
     }
 
+    // Transform and return the data
     return transformToNested(data.data);
   } catch (error) {
-    // Re-throw AthleteNotFoundError as is
+    // Log the error for debugging
+    console.error(`Error fetching athlete with ID ${id}:`, error);
+
+    // If it's already an AthleteNotFoundError, convert it to a null return
     if (error instanceof AthleteNotFoundError) {
-      throw error;
+      return null;
     }
 
-    // Convert other errors to AthleteNotFoundError if they seem to be about missing athletes
-    if (error instanceof Error && error.message.includes("not found")) {
-      throw new AthleteNotFoundError(error.message, id);
+    // If the error message suggests the athlete wasn't found, return null
+    if (error instanceof Error && error.message.toLowerCase().includes("not found")) {
+      return null;
     }
 
-    // Otherwise, re-throw the original error
+    // For other errors (network issues, server errors), re-throw
     throw error;
   }
 };
@@ -299,12 +277,64 @@ export const createAthlete = async (data: AthleteOnboardingFormValues) => {
     throw new Error("First name, last name, and email are required fields");
   }
 
-  // Transform UI form data to a flat structure
-  const flatData = transformToFlat(data);
+  // The required fields for the athlete creation request
+  const requiredFields = {
+    firstName: data.basicInfo.firstName,
+    lastName: data.basicInfo.lastName,
+    email: data.basicInfo.email,
+    athleteUniqueId: `${data.basicInfo.firstName}_${nanoid(10)}`,
+  };
 
-  // Use type assertion to fix Hono client typing issues
+  // Additional optional fields
+  const optionalFields = {
+    // Optional fields
+    gender: data.basicInfo.gender,
+    dateOfBirth:
+      data.basicInfo.dateOfBirth instanceof Date
+        ? data.basicInfo.dateOfBirth.toISOString().split("T")[0]
+        : data.basicInfo.dateOfBirth,
+    displayName: data.basicInfo.displayName,
+    location: data.basicInfo.location,
+    profileImageUrl: data.basicInfo.profileImageUrl,
+    coverPhotoUrl: data.basicInfo.coverPhotoUrl,
+
+    // Sports activity
+    fitnessLevel: data.sportsActivity?.fitnessLevel,
+    primaryActivity1: data.sportsActivity?.primaryActivity1,
+    primaryActivity2: data.sportsActivity?.primaryActivity2,
+    primaryActivity3: data.sportsActivity?.primaryActivity3,
+    height: data.sportsActivity?.height,
+    weight: data.sportsActivity?.weight,
+
+    // Additional info
+    bio: data.additionalInfo?.bio,
+    goals: data.additionalInfo?.goals,
+    sponsors: data.additionalInfo?.sponsors,
+    websiteURLs: data.additionalInfo?.websiteURLs,
+    stravaLinks: data.additionalInfo?.stravaLinks,
+    instagramLinks: data.additionalInfo?.instagramLinks,
+    facebookLinks: data.additionalInfo?.facebookLinks,
+    twitterLinks: data.additionalInfo?.twitterLinks,
+    otherSocialLinks: data.additionalInfo?.otherSocialLinks,
+    youtubeURLs: data.additionalInfo?.youtubeURLs,
+    emergencyContact: data.additionalInfo?.emergencyContact,
+    allergies: data.additionalInfo?.allergies,
+    medicalConditions: data.additionalInfo?.medicalConditions,
+    medications: data.additionalInfo?.medications,
+    bloodGroup: data.additionalInfo?.bloodGroup,
+    privacySettings: data.additionalInfo?.privacySettings,
+    communicationPreferences: data.additionalInfo?.communicationPreferences,
+  };
+
+  // Create the full payload, starting with required fields and adding any defined optional fields
+  const requestPayload = {
+    ...requiredFields,
+    ...Object.fromEntries(Object.entries(optionalFields).filter(([_, v]) => v !== undefined)),
+  };
+
+  // Type assertion to satisfy the API client
   const response = await client.api.athlete.$post({
-    json: flatData,
+    json: requestPayload,
   });
 
   if (!response.ok) {
@@ -328,19 +358,66 @@ export const updateAthlete = async (
   id: string,
   data: AthleteUpdateFormValues
 ): Promise<unknown> => {
-  const flatData = transformToFlat(data) as Record<string, unknown>;
+  // Extract fields from form data
+  const updateAthleteData = {
+    // Basic info
+    firstName: data.basicInfo?.firstName,
+    lastName: data.basicInfo?.lastName,
+    email: data.basicInfo?.email,
+    gender: data.basicInfo?.gender,
+    dateOfBirth:
+      data.basicInfo?.dateOfBirth instanceof Date
+        ? data.basicInfo?.dateOfBirth.toISOString().split("T")[0]
+        : data.basicInfo?.dateOfBirth,
+    displayName: data.basicInfo?.displayName,
+    location: data.basicInfo?.location,
+    profileImageUrl: data.basicInfo?.profileImageUrl,
+    coverPhotoUrl: data.basicInfo?.coverPhotoUrl,
 
-  // Create a new payload without athleteUniqueId to prevent modification
-  const { athleteUniqueId, ...updatePayload } = flatData;
+    // Sports activity
+    fitnessLevel: data.sportsActivity?.fitnessLevel,
+    primaryActivity1: data.sportsActivity?.primaryActivity1,
+    primaryActivity2: data.sportsActivity?.primaryActivity2,
+    primaryActivity3: data.sportsActivity?.primaryActivity3,
+    height: data.sportsActivity?.height,
+    weight: data.sportsActivity?.weight,
 
-  // Use type assertion to fix Hono client typing issues
-  const response = await client.api.athlete[":id"].$put({
-    param: { id },
-    json: updatePayload,
-  } as {
+    // Additional info
+    bio: data.additionalInfo?.bio,
+    goals: data.additionalInfo?.goals,
+    sponsors: data.additionalInfo?.sponsors,
+    websiteURLs: data.additionalInfo?.websiteURLs,
+    stravaLinks: data.additionalInfo?.stravaLinks,
+    instagramLinks: data.additionalInfo?.instagramLinks,
+    facebookLinks: data.additionalInfo?.facebookLinks,
+    twitterLinks: data.additionalInfo?.twitterLinks,
+    otherSocialLinks: data.additionalInfo?.otherSocialLinks,
+    youtubeURLs: data.additionalInfo?.youtubeURLs,
+    emergencyContact: data.additionalInfo?.emergencyContact,
+    allergies: data.additionalInfo?.allergies,
+    medicalConditions: data.additionalInfo?.medicalConditions,
+    medications: data.additionalInfo?.medications,
+    bloodGroup: data.additionalInfo?.bloodGroup,
+    privacySettings: data.additionalInfo?.privacySettings,
+    communicationPreferences: data.additionalInfo?.communicationPreferences,
+  };
+
+  // Remove undefined values
+  const requestPayload = Object.fromEntries(
+    Object.entries(updateAthleteData).filter(([_, v]) => v !== undefined)
+  );
+
+  // Type for API request with mandatory fields
+  interface UpdateAthleteRequest {
     param: { id: string };
     json: Record<string, unknown>;
-  });
+  }
+
+  // Use type interface for the API call
+  const response = await client.api.athlete[":id"].$put({
+    param: { id },
+    json: requestPayload,
+  } as UpdateAthleteRequest);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);

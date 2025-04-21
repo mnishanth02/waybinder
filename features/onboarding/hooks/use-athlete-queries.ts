@@ -6,6 +6,7 @@ import type {
 } from "@/lib/validations/athlete-onboarding";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import React from "react";
 import { toast } from "sonner";
 import {
   createAthlete,
@@ -99,22 +100,64 @@ export const useGetAthleteById = (id: string) => {
 /**
  * Hook to fetch an athlete by unique ID
  * @param id The unique ID to fetch
+ * @param options Optional configuration for the query
  * @returns Query result with athlete data, loading and error states
  */
-export const useGetAthleteByUniqueId = (id: string) => {
-  return useQuery({
+export const useGetAthleteByUniqueId = (
+  id: string,
+  options?: {
+    onError?: (error: Error) => void;
+    onNotFound?: (id: string) => void;
+    redirectOnNotFound?: string;
+    enabled?: boolean;
+    retry?: boolean | number | ((failureCount: number, error: Error) => boolean);
+  }
+) => {
+  const router = useRouter();
+
+  const query = useQuery({
     queryKey: [athleteKeys.unique(id)],
     queryFn: () => getAthleteByUniqueId(id),
-    enabled: Boolean(id),
-    retry: (failureCount, error) => {
-      // Don't retry for AthleteNotFoundError
-      if (error instanceof AthleteNotFoundError) {
-        return false;
-      }
-      // Retry other errors up to 3 times
-      return failureCount < 3;
-    },
+    enabled: options?.enabled !== undefined ? options.enabled && Boolean(id) : Boolean(id),
+    retry:
+      options?.retry !== undefined
+        ? options.retry
+        : (failureCount, error) => {
+            // Don't retry for AthleteNotFoundError
+            if (error instanceof AthleteNotFoundError) {
+              return false;
+            }
+            // Retry other errors up to 3 times
+            return failureCount < 3;
+          },
   });
+
+  // Handle errors using the error property from the query result
+  React.useEffect(() => {
+    if (query.error) {
+      // Handle 404 errors specifically
+      if (query.error instanceof AthleteNotFoundError) {
+        console.error(`Athlete with ID ${id} not found`);
+
+        // Call the custom not found handler if provided
+        if (options?.onNotFound) {
+          options.onNotFound(id);
+        }
+
+        // Redirect if a redirect path is provided
+        if (options?.redirectOnNotFound) {
+          router.push(options.redirectOnNotFound);
+        }
+      }
+
+      // Call the general error handler if provided
+      if (options?.onError) {
+        options.onError(query.error as Error);
+      }
+    }
+  }, [query.error, id, options, router]);
+
+  return query;
 };
 
 /**
@@ -135,8 +178,10 @@ export const useGetMyAthleteProfile = () => {
  */
 export const useCreateAthlete = (options?: {
   onSuccess?: (data: unknown) => void;
+  onError?: (error: Error) => void;
   redirectPath?: string;
   transformResponse?: boolean; // Option to transform the response back to form structure
+  showToasts?: boolean; // Option to show toast notifications (default: true)
 }) => {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -148,20 +193,36 @@ export const useCreateAthlete = (options?: {
   return useMutation({
     mutationFn,
     onSuccess: (data) => {
-      toast.success("Athlete profile created successfully");
+      // Show success toast unless explicitly disabled
+      if (options?.showToasts !== false) {
+        toast.success("Athlete profile created successfully");
+      }
+
+      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: athleteKeys.all });
 
+      // Call custom success handler if provided
       if (options?.onSuccess) {
         const callbackData = options.transformResponse ? transformFlatToNested(data) : data;
         options.onSuccess(callbackData);
       }
 
-      const athleteRedirect = `/athlete/${data.uniqueId}`;
-      router.push(athleteRedirect);
+      // Redirect to the athlete page or custom redirect path
+      const redirectPath = options?.redirectPath || `/athlete/${data.uniqueId}`;
+      router.push(redirectPath);
     },
     onError: (error) => {
-      toast.error(`Failed to create athlete profile: ${error.message}`);
+      // Show error toast unless explicitly disabled
+      if (options?.showToasts !== false) {
+        toast.error(`Failed to create athlete profile: ${error.message}`);
+      }
+
       console.error("Create athlete error:", error);
+
+      // Call custom error handler if provided
+      if (options?.onError) {
+        options.onError(error);
+      }
     },
   });
 };

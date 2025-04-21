@@ -2,13 +2,43 @@
 import Loader from "@/components/common/loader";
 import AthleteDashboard from "@/features/athlete/coomponents/dashboard";
 import { useGetAthleteByUniqueId } from "@/features/onboarding/hooks";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 const AthleteHome = ({ athleteId }: { athleteId: string }) => {
-  const { data: athleteData, isLoading } = useGetAthleteByUniqueId(athleteId);
+  const router = useRouter();
 
-  // Show loader while data is loading
-  if (isLoading || !athleteData) {
+  // Use the hook with minimal error handling since most errors are handled at the page level
+  const {
+    data: athleteData,
+    isLoading,
+    error,
+  } = useGetAthleteByUniqueId(athleteId, {
+    enabled: !!athleteId,
+    retry: false,
+  });
+
+  // Handle any client-side errors that weren't caught during prefetching
+  useEffect(() => {
+    if (error) {
+      // Show toast for any errors that happen on the client
+      toast.error(`Error loading athlete: ${error.message}`);
+      console.error("Client-side error fetching athlete:", error);
+    }
+  }, [error]);
+
+  // Show loading state
+  if (isLoading) {
     return <Loader />;
+  }
+
+  // This should rarely happen since we're handling not found at the page level
+  // But keeping as a fallback for client-side navigation
+  if (!athleteData) {
+    toast.error("Athlete data not available");
+    router.push("/");
+    return null;
   }
 
   return (

@@ -1,8 +1,11 @@
 import type { AthleteProfileType, UserTypeSelect } from "@/server/db/schema";
 
-export interface User extends UserTypeSelect {}
+interface _User extends UserTypeSelect {}
 
-export interface UserWithAthleteProfile
+interface _UserWithAthleteProfile
   extends Pick<UserTypeSelect, "name" | "email" | "isAdmin" | "role"> {
   athleteProfile?: Pick<AthleteProfileType, "firstName" | "lastName" | "athleteUniqueId" | "email">;
 }
+
+export type UserType = _User;
+export type UserWithAthleteProfileType = _UserWithAthleteProfile;

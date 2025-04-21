@@ -13,7 +13,7 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       className={cn(
-        "flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-secondary/10"
+        "flex items-center justify-center bg-gradient-to-b from-background to-secondary/10"
       )}
     >
       {children}

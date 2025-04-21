@@ -22,11 +22,11 @@ export default async function OnboardingPage() {
 
   const response = await getAthleteIdByUserId(session.user.id);
 
-  if (!response.success || !response.data) {
-    return redirect("/");
-  }
+  // if (!response.success || !response.data) {
+  //   return redirect("/");
+  // }
 
-  if (response.data.athleteUniqueId) {
+  if (response.success && response.data && response.data.athleteUniqueId) {
     redirect(`/athlete/${response.data.athleteUniqueId}`);
   }
 

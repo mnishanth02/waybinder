@@ -1,9 +1,10 @@
+import { CreateAthleteSchema, UpdateAthleteSchema } from "@/features/types/athlete";
 import type { UserTypeSelect } from "@/server/db/schema";
 import { zValidator } from "@/server/lib/validator-wrapper";
 import { ApiStatusCode } from "@/types/api";
 import { Hono } from "hono";
 import { z } from "zod";
-import { type NewAthleteProfileType, insertAthleteSchema } from "../../db/schema/athlete-schema";
+import type { NewAthleteProfileType } from "../../db/schema/athlete-schema";
 import { protect } from "../../middleware/auth.middleware";
 import {
   createAthlete,
@@ -43,21 +44,6 @@ const athleteQuerySchema = z.object({
     .transform((val) => val?.trim()),
 });
 
-// Create specific validation schemas for different operations
-const createAthleteSchema = insertAthleteSchema.omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-const updateAthleteSchema = insertAthleteSchema.partial().omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
 // ===== Route setup =====
 
 // Create a new router instance
@@ -66,7 +52,7 @@ const athleteRouter = new Hono()
   .get("/unique/:id", zValidator("param", idParamSchema), getAthleteByUniqueId)
   .get("/:id", zValidator("param", idParamSchema), getAthleteById)
   .get("/me", protect, getMyAthleteProfile)
-  .post("/", protect, zValidator("json", createAthleteSchema), async (c) => {
+  .post("/", protect, zValidator("json", CreateAthleteSchema), async (c) => {
     const user = c.get("user") as UserTypeSelect;
     const body = (await c.req.json()) as NewAthleteProfileType;
     body.userId = user.id;
@@ -77,7 +63,7 @@ const athleteRouter = new Hono()
     "/:id",
     protect,
     zValidator("param", idParamSchema),
-    zValidator("json", updateAthleteSchema),
+    zValidator("json", UpdateAthleteSchema),
     updateAthlete
   )
   .delete("/:id", protect, zValidator("param", idParamSchema), deleteAthlete);
