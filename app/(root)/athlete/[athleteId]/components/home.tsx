@@ -9,7 +9,6 @@ import { toast } from "sonner";
 const AthleteHome = ({ athleteId }: { athleteId: string }) => {
   const router = useRouter();
 
-  // Use the hook with minimal error handling since most errors are handled at the page level
   const {
     data: athleteData,
     isLoading,
@@ -22,7 +21,6 @@ const AthleteHome = ({ athleteId }: { athleteId: string }) => {
   // Handle any client-side errors that weren't caught during prefetching
   useEffect(() => {
     if (error) {
-      // Show toast for any errors that happen on the client
       toast.error(`Error loading athlete: ${error.message}`);
       console.error("Client-side error fetching athlete:", error);
     }
@@ -33,8 +31,6 @@ const AthleteHome = ({ athleteId }: { athleteId: string }) => {
     return <Loader />;
   }
 
-  // This should rarely happen since we're handling not found at the page level
-  // But keeping as a fallback for client-side navigation
   if (!athleteData) {
     toast.error("Athlete data not available");
     router.push("/");

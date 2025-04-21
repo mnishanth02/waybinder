@@ -25,7 +25,7 @@ export default function NotFound(): ReactNode {
   }, [countdown, router]);
 
   return (
-    <div className="relative flex h-full w-full flex-1 flex-col items-center justify-center bg-background p-4">
+    <div className="flex h-full w-full flex-1 flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md animate-fade-in">
         <Card className="border-border shadow-lg">
           <CardHeader className="flex flex-col items-center pb-4">

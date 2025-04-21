@@ -12,9 +12,7 @@ export const metadata = {
 const RootLayout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <div
-      className={cn(
-        "flex items-center justify-center bg-gradient-to-b from-background to-secondary/10"
-      )}
+      className={cn("flex min-h-screen flex-col bg-gradient-to-b from-background to-secondary/10")}
     >
       {children}
     </div>
