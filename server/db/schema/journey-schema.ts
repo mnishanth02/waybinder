@@ -1,4 +1,5 @@
 import { index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { users } from "./auth-schema";
 import { journeyTypeEnum, privacyStatusEnum } from "./enum";
 
@@ -42,3 +43,12 @@ export const journeys = pgTable(
     index("journeys_updated_at_idx").on(t.updatedAt),
   ]
 );
+
+// Create base Zod validation schemas from Drizzle schema
+export const selectJourneySchema = createSelectSchema(journeys);
+export const insertJourneySchema = createInsertSchema(journeys);
+
+// Define a type for easier usage in your application
+
+export type JourneyType = typeof journeys.$inferSelect;
+export type NewJourneyType = typeof journeys.$inferInsert;
