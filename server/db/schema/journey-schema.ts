@@ -25,6 +25,8 @@ export const journeys = pgTable(
     location: text("location"),
     totalDistanceKm: text("total_distance_km"),
     totalElevationGainM: text("total_elevation_gain_m"),
+    buddyIds: text("buddy_ids").array(),
+    memberNames: text("member_names").array(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()

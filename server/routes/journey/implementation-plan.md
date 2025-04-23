@@ -29,6 +29,8 @@ export const journeys = pgTable(
     location: text("location"),
     totalDistanceKm: text("total_distance_km"),
     totalElevationGainM: text("total_elevation_gain_m"),
+    buddyIds: text("buddy_ids").array(),
+    memberNames: text("member_names").array(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
@@ -59,6 +61,8 @@ export const journeys = pgTable(
     location?: string;
     totalDistanceKm?: string;
     totalElevationGainM?: string;
+    buddyIds?: string[];
+    memberNames?: string[];
   }
   ```
 - **Response**:
@@ -250,6 +254,11 @@ All controller functions include proper error handling for negative scenarios:
 - Forbidden access returns a 403 status code
 - Bad requests return a 400 status code
 
+## Field Descriptions
+
+- **buddyIds**: An array of user IDs representing registered users who are tagged as buddies for the journey. These users are part of the platform.
+- **memberNames**: An array of plain text names representing people who are part of the journey but may not be registered on the platform.
+
 ## UI Integration Guidelines
 
 When building the UI for journeys, consider the following:
@@ -259,6 +268,8 @@ When building the UI for journeys, consider the following:
    - Validate dates to ensure endDate is after startDate
    - Provide a dropdown for journeyType with all available options
    - Allow for optional fields like description, tags, location, etc.
+   - Implement a user search/select component for buddyIds to tag registered users
+   - Provide a text input field for memberNames to add non-registered participants
 
 2. **Journey Listing**:
    - Implement pagination controls
@@ -271,6 +282,8 @@ When building the UI for journeys, consider the following:
    - Show all journey details
    - Include edit and delete buttons for the journey creator
    - Display related data like activities, media, etc.
+   - Show a list of buddies with their profile information
+   - Display the list of non-registered members
 
 4. **My Journeys View**:
    - Similar to the journey listing but filtered to the current user's journeys

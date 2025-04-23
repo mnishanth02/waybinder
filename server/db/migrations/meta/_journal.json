@@ -29,6 +29,20 @@
       "when": 1745299630495,
       "tag": "0003_great_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1745383501044,
+      "tag": "0004_small_zaladane",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1745384137476,
+      "tag": "0005_clumsy_morph",
+      "breakpoints": true
     }
   ]
 }
