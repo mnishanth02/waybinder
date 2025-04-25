@@ -1,9 +1,9 @@
-import { AthleteNotFoundError } from "@/lib/errors/athlete-error";
-import { client } from "@/lib/hono-client";
 import type {
   AthleteOnboardingFormValues,
   AthleteUpdateFormValues,
-} from "@/lib/validations/athlete-onboarding";
+} from "@/features/onboarding/athlete-onboarding-validator";
+import { AthleteNotFoundError } from "@/lib/errors/athlete-error";
+import { client } from "@/lib/hono-client";
 import { nanoid } from "nanoid";
 
 // Define the enum types based on the Zod schema
@@ -18,83 +18,95 @@ interface Activity {
   experienceLevel: ExperienceLevel;
 }
 
-// Transform flat data structure from API to nested structure for UI forms
-const transformToNested = (flatData: unknown): AthleteOnboardingFormValues => {
-  // Type guard to ensure flatData has necessary properties
-  const athlete = flatData as Record<string, unknown>;
+// Helper functions to transform specific sections of athlete data
+const transformBasicInfo = (athlete: Record<string, unknown>) => ({
+  firstName: athlete.firstName as string,
+  lastName: athlete.lastName as string,
+  email: athlete.email as string,
+  dateOfBirth: athlete.dateOfBirth ? new Date(athlete.dateOfBirth as string) : undefined,
+  gender: athlete.gender as Gender,
+  displayName: (athlete.displayName as string) ?? undefined,
+  location: (athlete.location as string) ?? undefined,
+  profileImageUrl: (athlete.profileImageUrl as string) ?? undefined,
+  coverPhotoUrl: (athlete.coverPhotoUrl as string) ?? undefined,
+  // These are UI-only fields, not sent to/from API
+  profileImage: undefined,
+  coverPhoto: undefined,
+});
 
+const transformActivity = (
+  activity: Activity | null | undefined,
+  defaultActivity: Activity = { activity: "", experienceLevel: "beginner" }
+): Activity => {
+  if (!activity) {
+    return defaultActivity;
+  }
+
+  return {
+    activity: activity.activity,
+    experienceLevel: activity.experienceLevel,
+  };
+};
+
+const transformSportsActivity = (athlete: Record<string, unknown>) => {
   // Extract activity data with proper typing
   const primaryActivity1 = athlete.primaryActivity1 as Activity | null | undefined;
   const primaryActivity2 = athlete.primaryActivity2 as Activity | null | undefined;
   const primaryActivity3 = athlete.primaryActivity3 as Activity | null | undefined;
 
   return {
-    basicInfo: {
-      firstName: athlete.firstName as string,
-      lastName: athlete.lastName as string,
-      email: athlete.email as string,
-      dateOfBirth: athlete.dateOfBirth ? new Date(athlete.dateOfBirth as string) : undefined,
-      gender: athlete.gender as Gender,
-      displayName: (athlete.displayName as string) ?? undefined,
-      location: (athlete.location as string) ?? undefined,
-      profileImageUrl: (athlete.profileImageUrl as string) ?? undefined,
-      coverPhotoUrl: (athlete.coverPhotoUrl as string) ?? undefined,
-      // These are UI-only fields, not sent to/from API
-      profileImage: undefined,
-      coverPhoto: undefined,
-    },
-    sportsActivity: {
-      primaryActivity1: primaryActivity1
-        ? {
-            activity: primaryActivity1.activity,
-            experienceLevel: primaryActivity1.experienceLevel,
-          }
-        : { activity: "", experienceLevel: "beginner" },
-      primaryActivity2: primaryActivity2
-        ? {
-            activity: primaryActivity2.activity,
-            experienceLevel: primaryActivity2.experienceLevel,
-          }
-        : undefined,
-      primaryActivity3: primaryActivity3
-        ? {
-            activity: primaryActivity3.activity,
-            experienceLevel: primaryActivity3.experienceLevel,
-          }
-        : undefined,
-      fitnessLevel: athlete.fitnessLevel as FitnessLevel,
-      height: (athlete.height as string) ?? undefined,
-      weight: (athlete.weight as string) ?? undefined,
-    },
-    additionalInfo: {
-      bio: (athlete.bio as string) ?? undefined,
-      goals: (athlete.goals as string) ?? undefined,
-      sponsors: (athlete.sponsors as string) ?? undefined,
-      websiteURLs: athlete.websiteURLs as string[] | undefined,
-      stravaLinks: athlete.stravaLinks as string[] | undefined,
-      instagramLinks: athlete.instagramLinks as string[] | undefined,
-      facebookLinks: athlete.facebookLinks as string[] | undefined,
-      twitterLinks: athlete.twitterLinks as string[] | undefined,
-      otherSocialLinks: athlete.otherSocialLinks as
-        | Array<{ label: string; url: string }>
-        | undefined,
-      youtubeURLs: athlete.youtubeURLs as string[] | undefined,
-      emergencyContact: athlete.emergencyContact as
-        | {
-            name: string;
-            phoneNumber: string;
-            relationship: string;
-          }
-        | undefined,
-      allergies: (athlete.allergies as string) ?? undefined,
-      medicalConditions: (athlete.medicalConditions as string) ?? undefined,
-      medications: (athlete.medications as string) ?? undefined,
-      bloodGroup: athlete.bloodGroup as BloodGroup | undefined,
-      privacySettings: athlete.privacySettings as Record<string, boolean> | undefined,
-      communicationPreferences: athlete.communicationPreferences as
-        | Record<string, boolean>
-        | undefined,
-    },
+    primaryActivity1: transformActivity(primaryActivity1),
+    primaryActivity2: primaryActivity2 ? transformActivity(primaryActivity2) : undefined,
+    primaryActivity3: primaryActivity3 ? transformActivity(primaryActivity3) : undefined,
+    fitnessLevel: athlete.fitnessLevel as FitnessLevel,
+    height: (athlete.height as string) ?? undefined,
+    weight: (athlete.weight as string) ?? undefined,
+  };
+};
+
+const transformSocialLinks = (athlete: Record<string, unknown>) => ({
+  websiteURLs: athlete.websiteURLs as string[] | undefined,
+  stravaLinks: athlete.stravaLinks as string[] | undefined,
+  instagramLinks: athlete.instagramLinks as string[] | undefined,
+  facebookLinks: athlete.facebookLinks as string[] | undefined,
+  twitterLinks: athlete.twitterLinks as string[] | undefined,
+  otherSocialLinks: athlete.otherSocialLinks as Array<{ label: string; url: string }> | undefined,
+  youtubeURLs: athlete.youtubeURLs as string[] | undefined,
+});
+
+const transformMedicalInfo = (athlete: Record<string, unknown>) => ({
+  emergencyContact: athlete.emergencyContact as
+    | {
+        name: string;
+        phoneNumber: string;
+        relationship: string;
+      }
+    | undefined,
+  allergies: (athlete.allergies as string) ?? undefined,
+  medicalConditions: (athlete.medicalConditions as string) ?? undefined,
+  medications: (athlete.medications as string) ?? undefined,
+  bloodGroup: athlete.bloodGroup as BloodGroup | undefined,
+});
+
+const transformAdditionalInfo = (athlete: Record<string, unknown>) => ({
+  bio: (athlete.bio as string) ?? undefined,
+  goals: (athlete.goals as string) ?? undefined,
+  sponsors: (athlete.sponsors as string) ?? undefined,
+  ...transformSocialLinks(athlete),
+  ...transformMedicalInfo(athlete),
+  privacySettings: athlete.privacySettings as Record<string, boolean> | undefined,
+  communicationPreferences: athlete.communicationPreferences as Record<string, boolean> | undefined,
+});
+
+// Transform flat data structure from API to nested structure for UI forms
+const transformToNested = (flatData: unknown): AthleteOnboardingFormValues => {
+  // Type guard to ensure flatData has necessary properties
+  const athlete = flatData as Record<string, unknown>;
+
+  return {
+    basicInfo: transformBasicInfo(athlete),
+    sportsActivity: transformSportsActivity(athlete),
+    additionalInfo: transformAdditionalInfo(athlete),
   };
 };
 
@@ -107,13 +119,8 @@ interface GetAthletesParams {
   search?: string;
 }
 
-/**
- * Get all athletes with optional filtering and pagination
- */
-export const getAthletes = async (
-  params?: GetAthletesParams
-): Promise<AthleteOnboardingFormValues[]> => {
-  // Convert numeric values to strings for URL query parameters
+// Helper function to convert params to query string parameters
+const convertAthletesParamsToQueryString = (params?: GetAthletesParams): Record<string, string> => {
   const queryParams: Record<string, string> = {};
 
   if (params) {
@@ -124,17 +131,27 @@ export const getAthletes = async (
     if (params.search) queryParams.search = params.search;
   }
 
-  const response = await client.api.athlete.$get({
-    query: queryParams,
-  });
+  return queryParams;
+};
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData ? JSON.stringify(errorData) : "Failed to fetch athletes");
-  }
+// Helper function to handle API errors
+const handleAthleteApiError = async (
+  response: Response,
+  defaultMessage: string
+): Promise<never> => {
+  const errorData = await response.json().catch(() => null);
+  throw new Error(errorData ? JSON.stringify(errorData) : defaultMessage);
+};
 
-  const data = await response.json();
+// Define API response type
+interface ApiResponse<T> {
+  success: boolean;
+  data: T | T[] | null;
+  message?: string;
+}
 
+// Helper function to process athlete response data
+const processAthleteResponse = (data: ApiResponse<unknown>): AthleteOnboardingFormValues[] => {
   if (!data.success || !data.data) {
     throw new Error("Invalid response from server");
   }
@@ -144,6 +161,27 @@ export const getAthletes = async (
 
   // Transform to UI format
   return flatAthletes.map((athlete) => transformToNested(athlete));
+};
+
+/**
+ * Get all athletes with optional filtering and pagination
+ */
+export const getAthletes = async (
+  params?: GetAthletesParams
+): Promise<AthleteOnboardingFormValues[]> => {
+  // Convert params to query string
+  const queryParams = convertAthletesParamsToQueryString(params);
+
+  const response = await client.api.athlete.$get({
+    query: queryParams,
+  });
+
+  if (!response.ok) {
+    await handleAthleteApiError(response, "Failed to fetch athletes");
+  }
+
+  const data = await response.json();
+  return processAthleteResponse(data);
 };
 
 /**

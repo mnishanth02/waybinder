@@ -1,9 +1,9 @@
 "use client";
-import { AthleteNotFoundError } from "@/lib/errors/athlete-error";
 import type {
   AthleteOnboardingFormValues,
   AthleteUpdateFormValues,
-} from "@/lib/validations/athlete-onboarding";
+} from "@/features/onboarding/athlete-onboarding-validator";
+import { AthleteNotFoundError } from "@/lib/errors/athlete-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -20,6 +20,66 @@ import {
 import { athleteKeys } from "./query-keys";
 
 /**
+ * Helper functions to transform specific sections of athlete data
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Needs to handle unknown API response structure
+const transformBasicInfo = (flatData: any) => ({
+  firstName: flatData.firstName,
+  lastName: flatData.lastName,
+  email: flatData.email,
+  dateOfBirth: flatData.dateOfBirth ? new Date(flatData.dateOfBirth) : undefined,
+  gender: flatData.gender,
+  displayName: flatData.displayName ?? undefined,
+  location: flatData.location ?? undefined,
+  profileImageUrl: flatData.profileImageUrl ?? undefined,
+  coverPhotoUrl: flatData.coverPhotoUrl ?? undefined,
+  // profileImage and coverPhoto are handled separately (file uploads)
+  profileImage: undefined,
+  coverPhoto: undefined,
+});
+
+// biome-ignore lint/suspicious/noExplicitAny: Needs to handle unknown API response structure
+const transformSportsActivity = (flatData: any) => ({
+  primaryActivity1: flatData.primaryActivity1,
+  primaryActivity2: flatData.primaryActivity2 ?? undefined,
+  primaryActivity3: flatData.primaryActivity3 ?? undefined,
+  fitnessLevel: flatData.fitnessLevel,
+  height: flatData.height ?? undefined,
+  weight: flatData.weight ?? undefined,
+});
+
+// biome-ignore lint/suspicious/noExplicitAny: Needs to handle unknown API response structure
+const transformSocialLinks = (flatData: any) => ({
+  stravaLinks: flatData.stravaLinks ?? undefined,
+  instagramLinks: flatData.instagramLinks ?? undefined,
+  facebookLinks: flatData.facebookLinks ?? undefined,
+  twitterLinks: flatData.twitterLinks ?? undefined,
+  otherSocialLinks: flatData.otherSocialLinks ?? undefined,
+  youtubeURLs: flatData.youtubeURLs ?? undefined,
+  websiteURLs: flatData.websiteURLs ?? undefined,
+});
+
+// biome-ignore lint/suspicious/noExplicitAny: Needs to handle unknown API response structure
+const transformMedicalInfo = (flatData: any) => ({
+  emergencyContact: flatData.emergencyContact ?? undefined,
+  allergies: flatData.allergies ?? undefined,
+  medicalConditions: flatData.medicalConditions ?? undefined,
+  medications: flatData.medications ?? undefined,
+  bloodGroup: flatData.bloodGroup ?? undefined,
+});
+
+// biome-ignore lint/suspicious/noExplicitAny: Needs to handle unknown API response structure
+const transformAdditionalInfo = (flatData: any) => ({
+  bio: flatData.bio ?? undefined,
+  goals: flatData.goals ?? undefined,
+  sponsors: flatData.sponsors ?? undefined,
+  ...transformSocialLinks(flatData),
+  ...transformMedicalInfo(flatData),
+  privacySettings: flatData.privacySettings ?? undefined,
+  communicationPreferences: flatData.communicationPreferences ?? undefined,
+});
+
+/**
  * Utility function to transform a flat athlete profile from the API
  * back into the nested form structure used by the UI
  *
@@ -29,47 +89,9 @@ import { athleteKeys } from "./query-keys";
 // biome-ignore lint/suspicious/noExplicitAny: Needs to handle unknown API response structure
 export const transformFlatToNested = (flatData: any): AthleteOnboardingFormValues => {
   return {
-    basicInfo: {
-      firstName: flatData.firstName,
-      lastName: flatData.lastName,
-      email: flatData.email,
-      dateOfBirth: flatData.dateOfBirth ? new Date(flatData.dateOfBirth) : undefined,
-      gender: flatData.gender,
-      displayName: flatData.displayName ?? undefined,
-      location: flatData.location ?? undefined,
-      profileImageUrl: flatData.profileImageUrl ?? undefined,
-      coverPhotoUrl: flatData.coverPhotoUrl ?? undefined,
-      // profileImage and coverPhoto are handled separately (file uploads)
-      profileImage: undefined,
-      coverPhoto: undefined,
-    },
-    sportsActivity: {
-      primaryActivity1: flatData.primaryActivity1,
-      primaryActivity2: flatData.primaryActivity2 ?? undefined,
-      primaryActivity3: flatData.primaryActivity3 ?? undefined,
-      fitnessLevel: flatData.fitnessLevel,
-      height: flatData.height ?? undefined,
-      weight: flatData.weight ?? undefined,
-    },
-    additionalInfo: {
-      bio: flatData.bio ?? undefined,
-      goals: flatData.goals ?? undefined,
-      sponsors: flatData.sponsors ?? undefined,
-      websiteURLs: flatData.websiteURLs ?? undefined,
-      stravaLinks: flatData.stravaLinks ?? undefined,
-      instagramLinks: flatData.instagramLinks ?? undefined,
-      facebookLinks: flatData.facebookLinks ?? undefined,
-      twitterLinks: flatData.twitterLinks ?? undefined,
-      otherSocialLinks: flatData.otherSocialLinks ?? undefined,
-      youtubeURLs: flatData.youtubeURLs ?? undefined,
-      emergencyContact: flatData.emergencyContact ?? undefined,
-      allergies: flatData.allergies ?? undefined,
-      medicalConditions: flatData.medicalConditions ?? undefined,
-      medications: flatData.medications ?? undefined,
-      bloodGroup: flatData.bloodGroup ?? undefined,
-      privacySettings: flatData.privacySettings ?? undefined,
-      communicationPreferences: flatData.communicationPreferences ?? undefined,
-    },
+    basicInfo: transformBasicInfo(flatData),
+    sportsActivity: transformSportsActivity(flatData),
+    additionalInfo: transformAdditionalInfo(flatData),
   };
 };
 
@@ -132,30 +154,42 @@ export const useGetAthleteByUniqueId = (
           },
   });
 
+  // Helper functions to handle different error scenarios
+  const handleAthleteNotFound = React.useCallback(() => {
+    console.error(`Athlete with ID ${id} not found`);
+
+    // Call the custom not found handler if provided
+    if (options?.onNotFound) {
+      options.onNotFound(id);
+    }
+
+    // Redirect if a redirect path is provided
+    if (options?.redirectOnNotFound) {
+      router.push(options.redirectOnNotFound);
+    }
+  }, [id, options, router]);
+
+  const handleGeneralError = React.useCallback(
+    (error: Error) => {
+      if (options?.onError) {
+        options.onError(error);
+      }
+    },
+    [options]
+  );
+
   // Handle errors using the error property from the query result
   React.useEffect(() => {
-    if (query.error) {
-      // Handle 404 errors specifically
-      if (query.error instanceof AthleteNotFoundError) {
-        console.error(`Athlete with ID ${id} not found`);
+    if (!query.error) return;
 
-        // Call the custom not found handler if provided
-        if (options?.onNotFound) {
-          options.onNotFound(id);
-        }
-
-        // Redirect if a redirect path is provided
-        if (options?.redirectOnNotFound) {
-          router.push(options.redirectOnNotFound);
-        }
-      }
-
-      // Call the general error handler if provided
-      if (options?.onError) {
-        options.onError(query.error as Error);
-      }
+    // Handle 404 errors specifically
+    if (query.error instanceof AthleteNotFoundError) {
+      handleAthleteNotFound();
     }
-  }, [query.error, id, options, router]);
+
+    // Call the general error handler for all errors
+    handleGeneralError(query.error as Error);
+  }, [query.error, handleAthleteNotFound, handleGeneralError]);
 
   return query;
 };

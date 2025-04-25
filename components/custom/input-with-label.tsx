@@ -43,7 +43,7 @@ export function InputWithLabel<S>({
       render={({ field }) => (
         <FormItem className="flex-1">
           {fieldTitle && (
-            <FormLabel className="mb-2" htmlFor={nameInSchema}>
+            <FormLabel className="mb-1" htmlFor={nameInSchema}>
               {fieldTitle}
             </FormLabel>
           )}

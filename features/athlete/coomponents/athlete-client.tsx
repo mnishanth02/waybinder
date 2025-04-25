@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-const AthleteHome = ({ athleteId }: { athleteId: string }) => {
+const AthleteClient = ({ athleteId }: { athleteId: string }) => {
   const router = useRouter();
 
   const {
@@ -56,4 +56,4 @@ const AthleteHome = ({ athleteId }: { athleteId: string }) => {
   );
 };
 
-export default AthleteHome;
+export default AthleteClient;

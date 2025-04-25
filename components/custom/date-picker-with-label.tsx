@@ -175,7 +175,7 @@ export function DatePickerWithLabel<S>({
                               ref={isCurrentMonth ? currentMonthButtonRef : undefined}
                               variant={isCurrentMonth ? "default" : "outline"}
                               size="sm"
-                              className="h-7"
+                              className="h-7 cursor-pointer"
                               disabled={isDisabled}
                               onClick={() => props.onMonthSelect(month)}
                             >
@@ -241,7 +241,7 @@ export function DatePickerWithLabel<S>({
                 startMonth={startDate}
                 endMonth={endDate}
                 disabled={disabled}
-                initialFocus
+                autoFocus
                 locale={enUS}
                 weekStartsOn={0}
                 classNames={{

@@ -1,4 +1,4 @@
-import type { AthleteOnboardingFormValues } from "@/lib/validations/athlete-onboarding";
+import type { AthleteOnboardingFormValues } from "@/features/onboarding/athlete-onboarding-validator";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 

@@ -1,41 +1,19 @@
+import {
+  BLOOD_GROUPS,
+  EXPERIENCE_LEVELS,
+  FITNESS_LEVELS,
+  GENDERS,
+  JOURNEY_TYPES,
+  PRIVACY_STATUSES,
+  USER_ROLES,
+} from "@/types/enums";
 import { pgEnum } from "drizzle-orm/pg-core";
 
-// Define enums for structured data
-export const userRoleEnum = pgEnum("user_role", ["admin", "user", "athlete"]);
-export const genderEnum = pgEnum("gender", ["male", "female", "non-binary", "prefer-not-to-say"]);
-export const fitnessLevelEnum = pgEnum("fitness_level", ["beginner", "intermediate", "advanced"]);
-export const experienceLevelEnum = pgEnum("experience_level", [
-  "beginner",
-  "intermediate",
-  "advanced",
-  "professional",
-]);
-export const bloodGroupEnum = pgEnum("blood_group", [
-  "A+",
-  "A-",
-  "B+",
-  "B-",
-  "AB+",
-  "AB-",
-  "O+",
-  "O-",
-  "unknown",
-]);
-
-//
-export const journeyTypeEnum = pgEnum("journey_type", [
-  "trekking",
-  "trail_running",
-  "mountaineering",
-  "cycling_touring",
-  "cycling_road",
-  "cycling_mountain",
-  "climbing_expedition",
-  "road_trip",
-  "travel",
-  "weekend_getaway",
-  "single_day_outing",
-  "other",
-]);
-
-export const privacyStatusEnum = pgEnum("privacy_status", ["private", "public"]);
+// Define enums for structured data using shared enum values
+export const userRoleEnum = pgEnum("user_role", USER_ROLES);
+export const genderEnum = pgEnum("gender", GENDERS);
+export const fitnessLevelEnum = pgEnum("fitness_level", FITNESS_LEVELS);
+export const experienceLevelEnum = pgEnum("experience_level", EXPERIENCE_LEVELS);
+export const bloodGroupEnum = pgEnum("blood_group", BLOOD_GROUPS);
+export const journeyTypeEnum = pgEnum("journey_type", JOURNEY_TYPES);
+export const privacyStatusEnum = pgEnum("privacy_status", PRIVACY_STATUSES);

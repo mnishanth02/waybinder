@@ -3,7 +3,7 @@ import { athleteKeys } from "@/features/onboarding/hooks/query-keys";
 import { getQueryClient } from "@/lib/utils/get-query-client";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { notFound } from "next/navigation";
-import AthleteHome from "./components/home";
+import AthleteClient from "../../../../features/athlete/coomponents/athlete-client";
 
 interface AthletePageProps {
   params: Promise<{ athleteId: string }>;
@@ -32,7 +32,7 @@ const AthletePage = async ({ params }: AthletePageProps) => {
     // If we have data, render the athlete home component
     return (
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <AthleteHome athleteId={athleteId} />
+        <AthleteClient athleteId={athleteId} />
       </HydrationBoundary>
     );
   } catch (error) {

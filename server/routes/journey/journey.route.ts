@@ -1,4 +1,4 @@
-import { CreateJourneySchema, UpdateJourneySchema } from "@/features/types/journey";
+import { CreateJourneySchema, UpdateJourneySchema } from "@/features/api-types/journey";
 import type { UserTypeSelect } from "@/server/db/schema";
 import { zValidator } from "@/server/lib/validator-wrapper";
 import { ApiStatusCode } from "@/types/api";

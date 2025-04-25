@@ -1,4 +1,4 @@
-import { CreateAthleteSchema, UpdateAthleteSchema } from "@/features/types/athlete";
+import { CreateAthleteSchema, UpdateAthleteSchema } from "@/features/api-types/athlete";
 import type { UserTypeSelect } from "@/server/db/schema";
 import { zValidator } from "@/server/lib/validator-wrapper";
 import { ApiStatusCode } from "@/types/api";

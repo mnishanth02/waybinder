@@ -1,3 +1,11 @@
+import {
+  EXPERIENCE_LEVELS,
+  FITNESS_LEVELS,
+  GENDERS,
+  bloodGroupSchema,
+  createEnumSchema,
+  experienceLevelSchema,
+} from "@/types/enums";
 import { z } from "zod";
 
 // Basic Info Schema
@@ -6,9 +14,7 @@ export const basicInfoSchema = z.object({
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   dateOfBirth: z.date({ invalid_type_error: "Invalid date format" }).optional(),
-  gender: z.enum(["male", "female", "non-binary", "prefer-not-to-say"], {
-    required_error: "Please select a gender",
-  }),
+  gender: createEnumSchema(GENDERS, "Please select a gender"),
   displayName: z.string().optional(),
   profileImage: z.any().optional(),
   coverPhoto: z.any().optional(),
@@ -21,25 +27,21 @@ export const basicInfoSchema = z.object({
 export const sportsActivitySchema = z.object({
   primaryActivity1: z.object({
     activity: z.string({ required_error: "Please select a primary activity" }),
-    experienceLevel: z.enum(["beginner", "intermediate", "advanced", "professional"], {
-      required_error: "Please select an experience level",
-    }),
+    experienceLevel: createEnumSchema(EXPERIENCE_LEVELS, "Please select an experience level"),
   }),
   primaryActivity2: z
     .object({
       activity: z.string(),
-      experienceLevel: z.enum(["beginner", "intermediate", "advanced", "professional"]),
+      experienceLevel: experienceLevelSchema,
     })
     .optional(),
   primaryActivity3: z
     .object({
       activity: z.string(),
-      experienceLevel: z.enum(["beginner", "intermediate", "advanced", "professional"]),
+      experienceLevel: experienceLevelSchema,
     })
     .optional(),
-  fitnessLevel: z.enum(["beginner", "intermediate", "advanced"], {
-    required_error: "Please select a fitness level",
-  }),
+  fitnessLevel: createEnumSchema(FITNESS_LEVELS, "Please select a fitness level"),
   height: z.string().optional(),
   weight: z.string().optional(),
 });
@@ -73,7 +75,7 @@ export const additionalInfoSchema = z.object({
   allergies: z.string().optional(),
   medicalConditions: z.string().optional(),
   medications: z.string().optional(),
-  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "unknown"]).optional(),
+  bloodGroup: bloodGroupSchema.optional(),
   privacySettings: z.record(z.boolean()).optional(),
   communicationPreferences: z.record(z.boolean()).optional(),
 });

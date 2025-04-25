@@ -22,12 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAthleteOnboardingStore } from "@/features/onboarding/store/athlete-onboarding-store";
-import { cn } from "@/lib/utils";
 import {
   type SportsActivityFormValues,
   sportsActivityStepSchema,
-} from "@/lib/validations/athlete-onboarding";
+} from "@/features/onboarding/athlete-onboarding-validator";
+import { useAthleteOnboardingStore } from "@/features/onboarding/store/athlete-onboarding-store";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence } from "framer-motion";
 import {

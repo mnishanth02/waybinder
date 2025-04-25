@@ -7,11 +7,11 @@ import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useAthleteOnboardingStore } from "@/features/onboarding/store/athlete-onboarding-store";
 import {
   type BasicInfoFormValues,
   basicInfoStepSchema,
-} from "@/lib/validations/athlete-onboarding";
+} from "@/features/onboarding/athlete-onboarding-validator";
+import { useAthleteOnboardingStore } from "@/features/onboarding/store/athlete-onboarding-store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Camera, ImageIcon, X } from "lucide-react";
 import Image from "next/image";

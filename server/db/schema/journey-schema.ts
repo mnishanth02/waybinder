@@ -52,5 +52,5 @@ export const insertJourneySchema = createInsertSchema(journeys);
 
 // Define a type for easier usage in your application
 
-export type JourneyType = typeof journeys.$inferSelect;
+export type JourneyTypeSelect = typeof journeys.$inferSelect;
 export type NewJourneyType = typeof journeys.$inferInsert;

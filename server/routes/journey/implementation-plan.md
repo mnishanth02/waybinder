@@ -254,6 +254,70 @@ All controller functions include proper error handling for negative scenarios:
 - Forbidden access returns a 403 status code
 - Bad requests return a 400 status code
 
+### API Response Type Pattern
+
+To ensure proper type inference between the Hono backend and Next.js frontend, we use a discriminated union type for API responses:
+
+```typescript
+// Define a discriminated union type for API responses
+export type ApiResponse<T> =
+  | { success: true; message?: string; data: T; meta?: PaginationMeta }
+  | { success: false; message: string; error?: string; statusCode?: number };
+```
+
+This pattern allows TypeScript to properly infer the response structure based on the `success` property:
+
+```typescript
+// In your API functions
+if (!result.success) {
+  // TypeScript knows that result.message exists and is a string
+  throw new Error(result.message || "Default error message");
+}
+
+// TypeScript knows that result.data exists and is of type T
+return result.data;
+```
+
+#### Implementation in Hono Backend
+
+When returning responses from the Hono backend, always follow this pattern:
+
+```typescript
+// Success response
+return c.json({
+  success: true,
+  message: "Operation successful",
+  data: someData
+});
+
+// Error response
+return c.json({
+  success: false,
+  message: "Operation failed",
+  error: "Detailed error information"
+}, ApiStatusCode.BAD_REQUEST);
+```
+
+#### Implementation in Next.js Frontend
+
+When using the Hono client in the Next.js frontend, properly type the responses:
+
+```typescript
+import type { ApiResponse } from '@/types/api';
+
+const response = await client.api.journey.$post({
+  json: data,
+});
+
+const result = await response.json() as ApiResponse<YourDataType>;
+
+if (!result.success) {
+  throw new Error(result.message || "Default error message");
+}
+
+return result.data;
+```
+
 ## Field Descriptions
 
 - **buddyIds**: An array of user IDs representing registered users who are tagged as buddies for the journey. These users are part of the platform.
