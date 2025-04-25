@@ -11,13 +11,15 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarIcon, Edit, Eye, MapPinIcon, TagIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 import type React from "react";
 import { useGetJourneys } from "../hooks/use-journey-queries";
 
-const JourneyList: React.FC = () => {
-  const router = useRouter();
+interface JourneyListProps {
+  onViewJourney: (journeyId: string) => void;
+  onEditJourney: (journeyId: string) => void;
+}
 
+const JourneyList: React.FC<JourneyListProps> = ({ onViewJourney, onEditJourney }) => {
   // Get current date and date from 12 months ago
   const currentDate = new Date();
   const twelveMonthsAgo = new Date();
@@ -32,16 +34,6 @@ const JourneyList: React.FC = () => {
       const journeyStartDate = new Date(journey.startDate);
       return journeyStartDate >= twelveMonthsAgo;
     }) || [];
-
-  // Handle view journey
-  const handleViewJourney = (journeyUniqueId: string) => {
-    router.push(`/journey/${journeyUniqueId}`);
-  };
-
-  // Handle edit journey
-  const handleEditJourney = (journeyUniqueId: string) => {
-    router.push(`/journey/${journeyUniqueId}/edit`);
-  };
 
   // Format date to display in a readable format
   const formatDate = (dateString: string) => {
@@ -128,7 +120,7 @@ const JourneyList: React.FC = () => {
                 variant="outline"
                 size="sm"
                 className="flex-1"
-                onClick={() => handleViewJourney(journey.journeyUniqueId)}
+                onClick={() => onViewJourney(journey.journeyUniqueId)}
               >
                 <Eye className="mr-1 h-4 w-4" /> View
               </Button>
@@ -136,7 +128,7 @@ const JourneyList: React.FC = () => {
                 variant="outline"
                 size="sm"
                 className="flex-1"
-                onClick={() => handleEditJourney(journey.journeyUniqueId)}
+                onClick={() => onEditJourney(journey.journeyUniqueId)}
               >
                 <Edit className="mr-1 h-4 w-4" /> Edit
               </Button>

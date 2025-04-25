@@ -108,6 +108,7 @@ interface JourneyFormProps {
   isSubmitting?: boolean;
   users: User[];
   isLoadingUsers: boolean;
+  isEditing?: boolean;
 }
 
 export function JourneyForm({
@@ -116,6 +117,7 @@ export function JourneyForm({
   isSubmitting = false,
   users,
   isLoadingUsers,
+  isEditing = false,
 }: JourneyFormProps) {
   const form = useForm<JourneyCreationFormValues>({
     resolver: zodResolver(journeySchema),
@@ -267,8 +269,10 @@ export function JourneyForm({
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
+              {isEditing ? "Saving..." : "Creating..."}
             </>
+          ) : isEditing ? (
+            "Save Changes"
           ) : (
             "Create Journey"
           )}
