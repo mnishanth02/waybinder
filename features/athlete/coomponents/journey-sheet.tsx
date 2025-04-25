@@ -24,7 +24,7 @@ const JourneySheet = ({
   const { data: userData, isLoading: isLoadingUsers } = useGetUsers();
 
   // Use the useCreateJourney hook
-  const { mutate: _createJourney, isPending } = useCreateJourney({
+  const { mutate: createJourney, isPending } = useCreateJourney({
     onSuccess: () => {
       // Close the sheet
       onClose();
@@ -54,12 +54,12 @@ const JourneySheet = ({
 
     console.log(data);
 
-    // createJourney({
-    //   ...data,
-    //   journeyType: data.journeyType, // Ensure journeyType is explicitly passed
-    //   startDate: data.startDate.toISOString(),
-    //   endDate: data.endDate.toISOString(),
-    // });
+    createJourney({
+      ...data,
+      journeyType: data.journeyType, // Ensure journeyType is explicitly passed
+      startDate: data.startDate.toISOString(),
+      endDate: data.endDate.toISOString(),
+    });
   };
 
   return (

@@ -3,8 +3,8 @@
 import { DatePickerWithLabel } from "@/components/custom/date-picker-with-label";
 import { InputWithLabel } from "@/components/custom/input-with-label";
 import { SelectWithLabel } from "@/components/custom/select-with-label";
+import { TagWithLabel } from "@/components/custom/tag-with-label";
 import { TextareaWithLabel } from "@/components/custom/textarea-with-label";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -23,13 +23,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { JOURNEY_TYPES, PRIVACY_STATUSES, createSelectOptions } from "@/types/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { User } from "better-auth";
-import { Check, ChevronsUpDown, Loader2, Plus, X } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { type JourneyCreationFormValues, journeySchema } from "../journey-validator";
@@ -131,7 +130,7 @@ export function JourneyForm({
       tags: [],
       buddyIds: [],
       memberNames: [],
-      coverImageUrl: "",
+      coverImageUrl: "https://pub-00fb8dcf88404f8180a3b4463db4bfe3.r2.dev/ice-mountain-img.jpg",
     },
   });
   const {
@@ -219,71 +218,11 @@ export function JourneyForm({
 
           {/* Tags field */}
           <div className="col-span-2">
-            <FormField
-              control={form.control}
-              name="tags"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tags</FormLabel>
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      {(field.value || []).map((tag) => {
-                        // Use the tag itself as the key since it should be unique
-                        const tagKey = `tag-${tag}`;
-                        return (
-                          <Badge
-                            key={tagKey}
-                            variant="secondary"
-                            className="flex items-center gap-1"
-                          >
-                            {tag}
-                            <X
-                              className="h-3 w-3 cursor-pointer"
-                              onClick={() => {
-                                const newTags = (field.value || []).filter((t) => t !== tag);
-                                field.onChange(newTags);
-                              }}
-                            />
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Add a tag"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && e.currentTarget.value.trim() !== "") {
-                            e.preventDefault();
-                            const newTag = e.currentTarget.value.trim();
-                            if (!(field.value || []).includes(newTag)) {
-                              field.onChange([...(field.value || []), newTag]);
-                            }
-                            e.currentTarget.value = "";
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={(e) => {
-                          const input = e.currentTarget.previousSibling as HTMLInputElement;
-                          if (input.value.trim() !== "") {
-                            const newTag = input.value.trim();
-                            if (!(field.value || []).includes(newTag)) {
-                              field.onChange([...(field.value || []), newTag]);
-                            }
-                            input.value = "";
-                          }
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <TagWithLabel
+              nameInSchema="tags"
+              fieldTitle="Tags"
+              placeholder="Add a tag"
+              allowDuplicates={false}
             />
           </div>
 
@@ -314,74 +253,12 @@ export function JourneyForm({
 
           {/* Member Names field */}
           <div className="col-span-2">
-            <FormField
-              control={form.control}
-              name="memberNames"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Group Members</FormLabel>
-                  <FormDescription>
-                    Add names of people joining who are not registered on the platform
-                  </FormDescription>
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      {(field.value || []).map((name) => {
-                        // Use the name itself as the key since it should be unique
-                        const nameKey = `member-${name}`;
-                        return (
-                          <Badge
-                            key={nameKey}
-                            variant="secondary"
-                            className="flex items-center gap-1"
-                          >
-                            {name}
-                            <X
-                              className="h-3 w-3 cursor-pointer"
-                              onClick={() => {
-                                const newNames = (field.value || []).filter((n) => n !== name);
-                                field.onChange(newNames);
-                              }}
-                            />
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Add a member name"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && e.currentTarget.value.trim() !== "") {
-                            e.preventDefault();
-                            const newName = e.currentTarget.value.trim();
-                            if (!(field.value || []).includes(newName)) {
-                              field.onChange([...(field.value || []), newName]);
-                            }
-                            e.currentTarget.value = "";
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={(e) => {
-                          const input = e.currentTarget.previousSibling as HTMLInputElement;
-                          if (input.value.trim() !== "") {
-                            const newName = input.value.trim();
-                            if (!(field.value || []).includes(newName)) {
-                              field.onChange([...(field.value || []), newName]);
-                            }
-                            input.value = "";
-                          }
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <TagWithLabel
+              nameInSchema="memberNames"
+              fieldTitle="Group Members"
+              placeholder="Add a member name"
+              allowDuplicates={false}
+              description="Add names of people joining who are not registered on the platform"
             />
           </div>
         </div>

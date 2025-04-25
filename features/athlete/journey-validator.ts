@@ -4,7 +4,7 @@ import { z } from "zod";
 export const journeySchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
   // Use createEnumSchema to make journeyType mandatory with a custom error message
-  journeyType: createEnumSchema(JOURNEY_TYPES, "Please select a journey type"),
+  journeyType: createEnumSchema(JOURNEY_TYPES, "Please select a journey type").default("other"),
   description: z.string(),
   startDate: z.date({ invalid_type_error: "Invalid date format" }),
   endDate: z.date({ invalid_type_error: "Invalid date format" }),
