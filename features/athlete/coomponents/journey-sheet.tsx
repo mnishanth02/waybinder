@@ -43,12 +43,7 @@ const JourneySheet = ({
   const { data: journeyData, isLoading: isLoadingJourney } = useGetJourneyByUniqueId(
     journeyId || "",
     {
-      // Only fetch when:
-      // 1. We have a journeyId
-      // 2. The sheet is open
-      // 3. It's NOT a new journey (we don't need to fetch for new journeys)
       enabled: !!journeyId && isOpen && !isNewJourney,
-      // Ensure we refetch when the journeyId changes
       retry: 1,
     }
   );
@@ -69,12 +64,8 @@ const JourneySheet = ({
     !isNewJourney && journeyData ? journeyData.id : "",
     {
       onSuccess: () => {
-        // Switch back to view mode
-        setViewMode("view");
-        // Update URL state if needed
-        if (setMode) {
-          setMode("view");
-        }
+        onClose();
+
         router.refresh();
       },
     }
