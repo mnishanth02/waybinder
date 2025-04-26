@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import JourneySheet from "@/features/athlete/coomponents/journey-sheet";
 import { useGetJourneyByUniqueId } from "@/features/athlete/hooks";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -96,6 +97,9 @@ const JourneyDetailsClient = ({ journeyId }: JourneyDetailsClientProps) => {
         journeyId={journeyId}
         journeyTitle={journeyData.title}
       />
+
+      {/* Journey Sheet for editing */}
+      <JourneySheet />
     </div>
   );
 };

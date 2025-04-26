@@ -3,12 +3,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useJourneySheetStore } from "@/features/athlete/store/use-journey-sheet-store";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils/date";
 import type { JourneyTypeSelect } from "@/server/db/schema";
 import { CalendarIcon, Edit, MapPinIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 
 interface JourneyHeaderProps {
   journey: JourneyTypeSelect;
@@ -16,7 +16,7 @@ interface JourneyHeaderProps {
 }
 
 const JourneyHeader = ({ journey, onDeleteClick }: JourneyHeaderProps) => {
-  const router = useRouter();
+  const { openSheet } = useJourneySheetStore();
   // Format journey type for display
   const formatJourneyType = (type: string) => {
     return type.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
@@ -70,7 +70,7 @@ const JourneyHeader = ({ journey, onDeleteClick }: JourneyHeaderProps) => {
               "bg-background/30 backdrop-blur-sm hover:bg-background/50",
               "border-white/30 text-white"
             )}
-            onClick={() => router.push(`/?journeyId=${journey.journeyUniqueId}&mode=edit`)}
+            onClick={() => openSheet(journey.journeyUniqueId, "edit")}
           >
             <Edit className="mr-1.5 h-4 w-4" />
             Edit

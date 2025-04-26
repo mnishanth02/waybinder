@@ -4,65 +4,41 @@ import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useJourneySheetStore } from "../store/use-journey-sheet-store";
 import JourneyList from "./journey-list";
 import JourneySheet from "./journey-sheet";
 
 const AthleteDashboard = () => {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const [selectedJourneyId, setSelectedJourneyId] = useQueryState(
-    "journeyId",
-    parseAsString.withDefault("")
-  );
+  const { openSheet } = useJourneySheetStore();
 
-  const [mode, setMode] = useQueryState("mode", parseAsString.withDefault(""));
+  // For backward compatibility with URL state - read only, no need to set
+  const [selectedJourneyId] = useQueryState("journeyId", parseAsString.withDefault(""));
+  const [mode] = useQueryState("mode", parseAsString.withDefault(""));
 
-  const [isNewJourney, setIsNewJourney] = useState(false);
-
-  // Handle journey selection and mode
+  // Handle journey selection and mode from URL parameters
   useEffect(() => {
     // Check if we're in "new" mode
     if (mode === "new") {
-      setIsNewJourney(true);
+      // Open the sheet using the store
+      openSheet(null, "new");
       return;
     }
 
     // If we have a journey ID but not in "new" mode, it's an existing journey
     if (selectedJourneyId) {
-      setIsNewJourney(false);
+      // Open the sheet using the store with the appropriate mode
+      openSheet(selectedJourneyId, (mode as "view" | "edit") || "view");
       return;
     }
-
-    // Default case: no journey selected
-    setIsNewJourney(false);
-  }, [selectedJourneyId, mode]);
+  }, [selectedJourneyId, mode, openSheet]);
 
   // Function to open journey sheet with specific journey and mode
-  const openJourneySheet = async (journeyId: string | null, viewMode: "view" | "edit" | "new") => {
-    console.log("Opening journey sheet:", journeyId, viewMode);
-
-    // For new journeys, we set mode="new" and don't set a journeyId
-    if (viewMode === "new") {
-      // Clear existing state first
-      await setSelectedJourneyId("");
-      if (mode !== "new") {
-        await setMode("new");
-      }
-    } else if (journeyId) {
-      // For existing journeys, clear existing state first
-      await setSelectedJourneyId("");
-      if (mode) {
-        await setMode("");
-      }
-
-      // Small delay to ensure state is cleared
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      // Then set both journey ID and mode
-      await setSelectedJourneyId(journeyId);
-      await setMode(viewMode);
-    }
+  // This uses the Zustand store which handles URL state internally
+  const openJourneySheet = (journeyId: string | null, viewMode: "view" | "edit" | "new") => {
+    openSheet(journeyId, viewMode);
   };
 
   return (
@@ -78,21 +54,8 @@ const AthleteDashboard = () => {
         onViewJourney={(id) => openJourneySheet(id, "view")}
         onAddActivity={(id) => router.push(`/journey/${id}`)}
       />
-      <JourneySheet
-        isOpen={!!selectedJourneyId || mode === "new"}
-        onClose={async () => {
-          // Clear the journey ID first
-          await setSelectedJourneyId("");
-          // Then clear the mode
-          if (mode) {
-            await setMode("");
-          }
-        }}
-        isNewJourney={isNewJourney}
-        journeyId={isNewJourney ? undefined : selectedJourneyId}
-        initialMode={mode === "new" ? "edit" : mode ? (mode as "view" | "edit") : undefined}
-        setMode={setMode}
-      />
+      {/* Use JourneySheet without props - it will use the Zustand store */}
+      <JourneySheet />
     </>
   );
 };

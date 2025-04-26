@@ -6,29 +6,52 @@ import { useGetUsers } from "@/features/auth/hooks/use-auth-queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarIcon, Edit, MapPinIcon, TagIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { parseAsString, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { useCreateJourney, useGetJourneyByUniqueId, useUpdateJourney } from "../hooks";
 import { journeyKeys } from "../hooks/query-keys";
 import type { JourneyCreationFormValues } from "../journey-validator";
+import { useJourneySheetStore } from "../store/use-journey-sheet-store";
 import { JourneyForm } from "./journey-form";
 
+// Legacy props interface for backward compatibility
 interface JourneySheetProps {
-  isOpen: boolean;
-  onClose: () => void;
-  isNewJourney: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
+  isNewJourney?: boolean;
   journeyId?: string;
   initialMode?: "view" | "edit";
   setMode?: (mode: string) => void;
 }
 
-const JourneySheet = ({
-  isOpen,
-  onClose,
-  isNewJourney,
-  journeyId,
-  initialMode,
-  setMode,
-}: JourneySheetProps) => {
+const JourneySheet = (props: JourneySheetProps = {}) => {
+  // Get URL state using nuqs and register with store
+  const [urlJourneyId, setUrlJourneyId] = useQueryState("journeyId", parseAsString.withDefault(""));
+  const [urlMode, setUrlMode] = useQueryState("mode", parseAsString.withDefault(""));
+
+  // Get state from Zustand store
+  const {
+    isOpen: storeIsOpen,
+    journeyId: storeJourneyId,
+    isNewJourney: storeIsNewJourney,
+    mode: storeMode,
+    closeSheet,
+    setMode: setStoreMode,
+    registerQueryStateSetters,
+  } = useJourneySheetStore();
+
+  // Register the nuqs setters with the store once
+  useEffect(() => {
+    registerQueryStateSetters(setUrlJourneyId, setUrlMode);
+  }, [registerQueryStateSetters, setUrlJourneyId, setUrlMode]);
+
+  // Determine component state with priority: props > store > URL
+  const isOpen = props.isOpen !== undefined ? props.isOpen : storeIsOpen;
+  const onClose = props.onClose || closeSheet;
+  const isNewJourney = props.isNewJourney !== undefined ? props.isNewJourney : storeIsNewJourney;
+  const journeyId = props.journeyId || storeJourneyId || urlJourneyId || "";
+  const initialMode = props.initialMode || storeMode || (urlMode as "view" | "edit" | undefined);
+
   // Maintain internal view mode state
   const [viewMode, setViewMode] = useState<"view" | "edit">(initialMode || "view");
   const router = useRouter();
@@ -93,7 +116,6 @@ const JourneySheet = ({
     // 3. We're in edit mode
     // 4. It's NOT a new journey (we don't need to fetch for new journeys)
     if (journeyId && isOpen && viewMode === "edit" && !isNewJourney) {
-      console.log("Refetching journey data for editing:", journeyId);
       queryClient.invalidateQueries({ queryKey: journeyKeys.unique(journeyId) });
     }
   }, [journeyId, isOpen, viewMode, isNewJourney, queryClient]);
@@ -112,9 +134,13 @@ const JourneySheet = ({
   const toggleEditMode = () => {
     const newMode = viewMode === "view" ? "edit" : "view";
     setViewMode(newMode);
-    // Update URL state if needed
-    if (setMode && isOpen && !isNewJourney) {
-      setMode(newMode);
+
+    // Update store state
+    setStoreMode(newMode);
+
+    // For backward compatibility with URL state
+    if (props.setMode && isOpen && !isNewJourney) {
+      props.setMode(newMode);
     }
   };
 
