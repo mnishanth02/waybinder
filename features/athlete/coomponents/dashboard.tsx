@@ -2,12 +2,14 @@
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import JourneyList from "./journey-list";
 import JourneySheet from "./journey-sheet";
 
 const AthleteDashboard = () => {
+  const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [selectedJourneyId, setSelectedJourneyId] = useQueryState(
     "journeyId",
@@ -74,7 +76,7 @@ const AthleteDashboard = () => {
       </div>
       <JourneyList
         onViewJourney={(id) => openJourneySheet(id, "view")}
-        onAddActivity={(id) => console.log("Add activity for journey:", id)}
+        onAddActivity={(id) => router.push(`/journey/${id}`)}
       />
       <JourneySheet
         isOpen={!!selectedJourneyId || mode === "new"}
