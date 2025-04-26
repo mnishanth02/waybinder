@@ -28,3 +28,14 @@ export function generateJourneyUniqueId(title?: string): string {
 
   return `${prefix}_${nanoid(10)}`;
 }
+
+/**
+ * Generate a unique ID for an activity
+ * @param title The title of the activity (optional)
+ * @returns A unique ID
+ */
+export function generateActivityUniqueId(title?: string): string {
+  const prefix = title ? title.substring(0, 10).toLowerCase().replace(/[^\w]/g, "_") : "activity";
+
+  return `${prefix}_${nanoid(10)}`;
+}
