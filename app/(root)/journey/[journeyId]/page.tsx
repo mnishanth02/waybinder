@@ -1,4 +1,4 @@
-import JourneyDetailsClient from "./components/journey-details-client";
+import JourneyDetailsClient from "../../../../features/athlete/coomponents/journey/journey-details-client";
 
 interface JourneyDetailsPageProps {
   params: Promise<{

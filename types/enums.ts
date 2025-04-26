@@ -43,6 +43,25 @@ export const JOURNEY_TYPES = [
 export type JourneyType = (typeof JOURNEY_TYPES)[number];
 export const journeyTypeSchema = z.enum(JOURNEY_TYPES);
 
+//  Activity Type
+export const ACTIVITY_TYPES = [
+  "hikeing",
+  "running",
+  "cycling",
+  "driving",
+  "flying",
+  "boating",
+  "rest",
+  "camping",
+  "climbing",
+  "mountaineer",
+  "sightseeing",
+  "travel",
+  "other",
+] as const;
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];
+export const activityTypeSchema = z.enum(ACTIVITY_TYPES);
+
 // Privacy Status
 export const PRIVACY_STATUSES = ["private", "public"] as const;
 export type PrivacyStatus = (typeof PRIVACY_STATUSES)[number];

@@ -1,4 +1,5 @@
 import {
+  ACTIVITY_TYPES,
   BLOOD_GROUPS,
   EXPERIENCE_LEVELS,
   FITNESS_LEVELS,
@@ -17,3 +18,4 @@ export const experienceLevelEnum = pgEnum("experience_level", EXPERIENCE_LEVELS)
 export const bloodGroupEnum = pgEnum("blood_group", BLOOD_GROUPS);
 export const journeyTypeEnum = pgEnum("journey_type", JOURNEY_TYPES);
 export const privacyStatusEnum = pgEnum("privacy_status", PRIVACY_STATUSES);
+export const activityTypeEnum = pgEnum("activity_type", ACTIVITY_TYPES);
