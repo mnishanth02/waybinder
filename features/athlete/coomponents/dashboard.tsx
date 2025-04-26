@@ -74,7 +74,7 @@ const AthleteDashboard = () => {
       </div>
       <JourneyList
         onViewJourney={(id) => openJourneySheet(id, "view")}
-        onEditJourney={(id) => openJourneySheet(id, "edit")}
+        onAddActivity={(id) => console.log("Add activity for journey:", id)}
       />
       <JourneySheet
         isOpen={!!selectedJourneyId || mode === "new"}
