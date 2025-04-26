@@ -61,7 +61,8 @@ const JourneyDetailsClient = ({ journeyId }: JourneyDetailsClientProps) => {
             <div className="space-y-4">
               <Skeleton className="h-64 w-full" />
               <Skeleton className="h-10 w-3/4" />
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
+                <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />

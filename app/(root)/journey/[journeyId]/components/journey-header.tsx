@@ -99,46 +99,38 @@ const JourneyHeader = ({ journey, onDeleteClick }: JourneyHeaderProps) => {
                 {formatDate(journey.startDate)} - {formatDate(journey.endDate)}
               </span>
             </div>
+            <div>
+              {journey.location && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPinIcon className="h-4 w-4" />
+                  <span>{journey.location}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <CardContent className="p-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Left Column: Journey Details */}
-          <div className="space-y-4">
-            {/* Location */}
-            {journey.location && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPinIcon className="h-4 w-4" />
-                <span>{journey.location}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Right Column: Description */}
-          <div>
-            {journey.description && (
-              <div className="text-pretty">
-                <p className="text-muted-foreground">{journey.description}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
+      <CardContent className="px-6 py-0">
         {/* Journey Stats */}
-        <div className="mt-6 grid grid-cols-3 gap-4 rounded-lg bg-muted/50 p-6">
-          <div className="text-center">
-            <div className="font-bold text-3xl">{journey.totalDistanceKm || "0"}</div>
-            <div className="mt-1 text-muted-foreground text-sm">Total Distance (km)</div>
-          </div>
-          <div className="text-center">
-            <div className="font-bold text-3xl">{calculateDays()}</div>
-            <div className="mt-1 text-muted-foreground text-sm">Days</div>
-          </div>
-          <div className="text-center">
-            <div className="font-bold text-3xl">0</div>
-            <div className="mt-1 text-muted-foreground text-sm">Activities</div>
+        <div className="rounded-lg bg-muted/50 p-2">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
+            <div className="text-center">
+              <div className="font-bold text-2xl">{journey.totalDistanceKm || "0"}</div>
+              <div className="text-muted-foreground text-xs">Distance (km)</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-2xl">{journey.totalElevationGainM || "0"}</div>
+              <div className="text-muted-foreground text-xs">Elevation (m)</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-2xl">{calculateDays()}</div>
+              <div className="text-muted-foreground text-xs">Days</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-2xl">0</div>
+              <div className="text-muted-foreground text-xs">Activities</div>
+            </div>
           </div>
         </div>
       </CardContent>
