@@ -8,9 +8,9 @@ import { CalendarIcon, Edit, MapPinIcon, TagIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
+import type { JourneyCreationFormValues } from "../athlete-validator";
 import { useCreateJourney, useGetJourneyByUniqueId, useUpdateJourney } from "../hooks";
 import { journeyKeys } from "../hooks/query-keys";
-import type { JourneyCreationFormValues } from "../journey-validator";
 import { useJourneySheetStore } from "../store/use-journey-sheet-store";
 import { JourneyForm } from "./journey-form";
 

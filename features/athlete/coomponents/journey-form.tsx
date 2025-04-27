@@ -31,7 +31,7 @@ import type { User } from "better-auth";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { type JourneyCreationFormValues, journeySchema } from "../journey-validator";
+import { type JourneyCreationFormValues, journeySchema } from "../athlete-validator";
 
 // Create select options for journey types and privacy statuses
 const journeyTypeOptions = createSelectOptions(JOURNEY_TYPES);

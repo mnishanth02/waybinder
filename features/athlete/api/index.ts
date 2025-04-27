@@ -8,8 +8,3 @@ export {
   updateJourney,
   deleteJourney,
 } from "./journey-api";
-
-export {
-  getUsers,
-  type User,
-} from "./user-api";
