@@ -17,6 +17,9 @@ export const activityKeys = {
   list: (filters: unknown) => [...activityKeys.lists(), { filters }] as const,
   details: () => [...activityKeys.all, "detail"] as const,
   detail: (id: string) => [...activityKeys.details(), id] as const,
+  byJourney: (journeyId: string, options?: unknown) =>
+    [...activityKeys.all, "journey", journeyId, options ? { options } : {}] as const,
+  byUniqueId: (uniqueId: string) => [...activityKeys.all, "unique", uniqueId] as const,
   journey: (journeyId: string) => [...activityKeys.all, "journey", journeyId] as const,
   unique: (id: string) => [...activityKeys.all, "unique", id] as const,
 };
