@@ -61,3 +61,23 @@ export const getEndOfDayUTC = (date: Date | string, timeZone: string = getUserTi
   const localEndOfDay = new Date(dateObj.setHours(23, 59, 59, 999));
   return toUTC(localEndOfDay, timeZone);
 };
+
+export const formatToISOStringDate = (date: Date | string | unknown): string => {
+  if (date instanceof Date) {
+    return date.toISOString();
+  }
+
+  if (typeof date === "string") {
+    // Ensure string dates are in ISO format
+    try {
+      // Try to parse and reformat to ensure consistency
+      return new Date(date).toISOString();
+    } catch (_) {
+      // If parsing fails, return the original string
+      return date;
+    }
+  }
+
+  // Fallback to current date if input is invalid
+  return new Date().toISOString();
+};

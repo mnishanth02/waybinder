@@ -1,4 +1,4 @@
-import { differenceInDays, isValid, parseISO } from "date-fns";
+import { isValid, parseISO } from "date-fns";
 
 /**
  * Calculate the day number for an activity based on the journey start date
@@ -17,21 +17,38 @@ export function calculateDayNumber(activityDate: string, journeyStartDate: strin
   }
 
   try {
-    const activityDateObj = parseISO(activityDate);
-    const journeyStartDateObj = parseISO(journeyStartDate);
+    // Normalize dates to ensure we're comparing just the date part (YYYY-MM-DD)
+    const activityDateStr = activityDate.split("T")[0] || activityDate;
+    const journeyStartDateStr = journeyStartDate.split("T")[0] || journeyStartDate;
+
+    // Parse the normalized dates
+    const activityDateObj = parseISO(activityDateStr);
+    const journeyStartDateObj = parseISO(journeyStartDateStr);
 
     if (!isValid(activityDateObj) || !isValid(journeyStartDateObj)) {
       return null;
     }
 
+    // Set time to midnight to ensure we're only comparing dates
+    activityDateObj.setHours(0, 0, 0, 0);
+    journeyStartDateObj.setHours(0, 0, 0, 0);
+
     // Calculate the difference in days and add 1 (day 1 is the start date)
-    const dayNumber = differenceInDays(activityDateObj, journeyStartDateObj) + 1;
+    const diffTime = activityDateObj.getTime() - journeyStartDateObj.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const dayNumber = diffDays + 1;
 
     // Return null if the activity date is before the journey start date
     if (dayNumber < 1) {
+      console.warn(
+        `Activity date ${activityDateStr} is before journey start date ${journeyStartDateStr}`
+      );
       return null;
     }
 
+    console.log(
+      `Calculated day number: ${dayNumber} for activity date ${activityDateStr} (journey starts on ${journeyStartDateStr})`
+    );
     return dayNumber;
   } catch (error) {
     console.error("Error calculating day number:", error);

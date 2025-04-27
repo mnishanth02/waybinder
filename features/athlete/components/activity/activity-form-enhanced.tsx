@@ -15,12 +15,23 @@ import { ACTIVITY_TYPES, createSelectOptions } from "@/types/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FileUp, Upload, X } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { type ActivityCreationFormValues, activitySchema } from "../../athlete-validator";
+import {
+  type ActivityCreationFormValues,
+  type ActivitySchemaValues,
+  activitySchema,
+} from "../../athlete-validator";
 
 // Create select options for activity types
 const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
+
+// Define a form values type that uses string for orderWithinDay (for the select input)
+// and includes dayNumber for internal calculation
+type ActivityFormValues = ActivitySchemaValues & {
+  orderWithinDay: string;
+  dayNumber?: number; // For internal use only, not shown to user
+};
 
 interface ActivityFormProps {
   onSubmit: (data: ActivityCreationFormValues) => void;
@@ -50,17 +61,38 @@ export function ActivityForm({
     pace: "-",
   });
 
-  const form = useForm<ActivityCreationFormValues>({
-    resolver: zodResolver(activitySchema),
-    defaultValues: {
+  // Create a properly structured defaultValues object
+  const formDefaultValues = React.useMemo(() => {
+    // Base default values
+    const baseDefaults: ActivityFormValues = {
       title: "",
       activityDate: new Date(),
       activityType: "other",
       content: "",
-      dayNumber: defaultValues?.dayNumber,
-      orderWithinDay: defaultValues?.orderWithinDay || 999,
-      ...defaultValues,
-    },
+      orderWithinDay: "1", // Always use string for select inputs
+    };
+
+    // If we have defaultValues from props, merge them
+    if (defaultValues) {
+      return {
+        ...baseDefaults,
+        ...defaultValues,
+        // Ensure orderWithinDay is a string for the select input
+        orderWithinDay:
+          defaultValues.orderWithinDay !== undefined
+            ? String(defaultValues.orderWithinDay)
+            : baseDefaults.orderWithinDay,
+      };
+    }
+
+    return baseDefaults;
+  }, [defaultValues]);
+
+  // Define the form with proper typing
+  const form = useForm<ActivityFormValues>({
+    resolver: zodResolver(activitySchema),
+    defaultValues: formDefaultValues,
+    mode: "onBlur", // Validate on blur for better UX
   });
 
   const {
@@ -72,7 +104,7 @@ export function ActivityForm({
   // Watch for activity date changes to auto-calculate day number
   const activityDate = watch("activityDate") as Date | string | undefined;
 
-  // Auto-calculate day number when activity date changes
+  // Auto-calculate day number when activity date changes (internal field, not shown to user)
   useEffect(() => {
     if (!journey?.startDate || !activityDate) return;
 
@@ -86,9 +118,19 @@ export function ActivityForm({
 
     if (!dateString) return;
 
-    const dayNum = calculateDayNumber(dateString, journey.startDate);
+    // Ensure we're using the date part only for both dates
+    const activityDateStr = dateString;
+    const journeyStartDateStr = journey.startDate.split("T")[0] || journey.startDate;
+
+    // Calculate the day number based on the activity date and journey start date
+    const dayNum = calculateDayNumber(activityDateStr, journeyStartDateStr);
+
+    // Store the day number in a hidden field for submission
     if (dayNum) {
       setValue("dayNumber", dayNum);
+    } else {
+      // Default to day 1 if calculation fails
+      setValue("dayNumber", 1);
     }
   }, [activityDate, journey?.startDate, setValue]);
 
@@ -166,10 +208,22 @@ export function ActivityForm({
   }, [photosPreviews]);
 
   const handleSubmit = useCallback(
-    (values: ActivityCreationFormValues) => {
+    (values: Record<string, unknown>) => {
+      // Convert orderWithinDay from string to number
+      // Convert form values to the expected format
+      const formattedValues: ActivityCreationFormValues = {
+        title: values.title as string,
+        activityDate: values.activityDate as Date,
+        activityType: values.activityType as string,
+        content: values.content as string | undefined,
+        orderWithinDay: Number(values.orderWithinDay),
+        // Ensure dayNumber is included (calculated from the activity date)
+        dayNumber: typeof values.dayNumber === "number" ? values.dayNumber : 1,
+      };
+
       // Here we would handle file uploads and then submit the form
       // For now, just pass the values to the parent component
-      onSubmit(values);
+      onSubmit(formattedValues);
     },
     [onSubmit]
   );
@@ -192,12 +246,35 @@ export function ActivityForm({
             </div>
 
             <div className="col-span-2 md:col-span-1">
-              <SelectWithLabel
-                nameInSchema={"activityType"}
-                fieldTitle={"Activity Type"}
-                options={activityTypeOptions}
-                placeholder={"Select activity type"}
-              />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <SelectWithLabel
+                    nameInSchema={"activityType"}
+                    fieldTitle={"Activity Type"}
+                    options={activityTypeOptions}
+                    placeholder={"Select activity type"}
+                  />
+                </div>
+                <div className="col-span-1">
+                  <SelectWithLabel
+                    nameInSchema={"orderWithinDay"}
+                    fieldTitle={"Order"}
+                    options={[
+                      { label: "1", value: "1" },
+                      { label: "2", value: "2" },
+                      { label: "3", value: "3" },
+                      { label: "4", value: "4" },
+                      { label: "5", value: "5" },
+                      { label: "6", value: "6" },
+                      { label: "7", value: "7" },
+                      { label: "8", value: "8" },
+                      { label: "9", value: "9" },
+                      { label: "10", value: "10" },
+                    ]}
+                    placeholder={"Order"}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="col-span-2">
@@ -208,9 +285,7 @@ export function ActivityForm({
               />
             </div>
 
-            {/* Hidden fields for day number and order */}
-            <input type="hidden" {...form.register("dayNumber")} />
-            <input type="hidden" {...form.register("orderWithinDay")} />
+            {/* Day number is calculated internally based on the activity date */}
           </div>
         </div>
 

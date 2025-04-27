@@ -42,6 +42,26 @@ export const createActivity = async (
   // Generate a unique ID for the activity
   const activityUniqueId = generateActivityUniqueId(body.title);
 
+  // Check if there's already an activity with the same day number and order
+  if (body.dayNumber && body.orderWithinDay) {
+    const existingActivity = await db.query.activities.findFirst({
+      where: and(
+        eq(activities.journeyId, journey.id),
+        eq(activities.dayNumber, body.dayNumber),
+        eq(activities.orderWithinDay, body.orderWithinDay)
+      ),
+    });
+
+    if (existingActivity) {
+      return {
+        success: false,
+        message: "Activity order conflict",
+        error: `An activity with order ${body.orderWithinDay} already exists for day ${body.dayNumber}. Please choose a different order.`,
+        statusCode: ApiStatusCode.BAD_REQUEST,
+      };
+    }
+  }
+
   // Create the activity with the generated values and the actual journey ID
   const newActivity: ActivityTypeInsert = {
     ...body,
@@ -338,6 +358,27 @@ export const updateActivity = async (
       error: "You do not have permission to update this activity",
       statusCode: ApiStatusCode.FORBIDDEN,
     };
+  }
+
+  // Check if we're updating the order and if there's a conflict
+  if (updateData.dayNumber && updateData.orderWithinDay) {
+    const existingActivity = await db.query.activities.findFirst({
+      where: and(
+        eq(activities.journeyId, activity.journeyId),
+        eq(activities.dayNumber, updateData.dayNumber),
+        eq(activities.orderWithinDay, updateData.orderWithinDay),
+        sql`${activities.id} != ${id}` // Exclude the current activity
+      ),
+    });
+
+    if (existingActivity) {
+      return {
+        success: false,
+        message: "Activity order conflict",
+        error: `An activity with order ${updateData.orderWithinDay} already exists for day ${updateData.dayNumber}. Please choose a different order.`,
+        statusCode: ApiStatusCode.BAD_REQUEST,
+      };
+    }
   }
 
   // Update activity with the updatedAt timestamp

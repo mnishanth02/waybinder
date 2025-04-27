@@ -28,12 +28,28 @@ export const activitySchema = z.object({
     .refine((date) => date instanceof Date && !Number.isNaN(date.getTime()), {
       message: "Please select a valid date",
     }),
-  dayNumber: z.number().optional(),
-  orderWithinDay: z.number().optional(),
+  // dayNumber is removed from the form schema but will be calculated internally
+  orderWithinDay: z
+    .union([
+      z
+        .number()
+        .min(1, { message: "Order must be at least 1" })
+        .max(10, { message: "Order cannot exceed 10" }),
+      z.string().transform((val) => Number.parseInt(val, 10)),
+    ])
+    .refine((val) => typeof val === "number" && !Number.isNaN(val), {
+      message: "Order must be a valid number",
+    }),
   activityType: createEnumSchema(ACTIVITY_TYPES, "Please select an activity type").default("other"),
   content: z.string().optional(),
   startTime: z.date().optional(),
   endTime: z.date().optional(),
 });
 
-export type ActivityCreationFormValues = z.infer<typeof activitySchema>;
+// Base form values from the schema
+export type ActivitySchemaValues = z.infer<typeof activitySchema>;
+
+// Extended type that includes dayNumber for internal use
+export type ActivityCreationFormValues = ActivitySchemaValues & {
+  dayNumber?: number;
+};

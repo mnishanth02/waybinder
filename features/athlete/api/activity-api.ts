@@ -106,7 +106,7 @@ export const getActivities = async (
   const result = await response.json();
 
   if (!result.success) {
-    throw new Error(result.message || "Failed to fetch activities");
+    throw new Error("Failed to fetch activities");
   }
 
   // Transform activity dates
@@ -143,7 +143,7 @@ export const getActivitiesByJourneyId = async (
   const result = await response.json();
 
   if (!result.success) {
-    throw new Error(result.message || `Failed to fetch activities for journey ${journeyId}`);
+    throw new Error(`Failed to fetch activities for journey ${journeyId}`);
   }
 
   // Transform activity dates

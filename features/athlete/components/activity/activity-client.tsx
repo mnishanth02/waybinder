@@ -10,6 +10,7 @@ import {
   useGetActivityByUniqueId,
   useUpdateActivity,
 } from "@/features/athlete/hooks/use-activity-queries";
+import { formatToISOStringDate } from "@/lib/utils/date";
 import { calculateDayNumber } from "@/lib/utils/date-helpers";
 import type { JourneyTypeSelect } from "@/server/db/schema";
 import { format, parseISO } from "date-fns";
@@ -71,8 +72,8 @@ function ActivityFormSection({
         defaultValues={{
           activityDate: defaultDate,
           dayNumber: defaultDayNumber,
-          // Default order within day to the end
-          orderWithinDay: 999,
+          // Default order within day to 1 (first in the day)
+          orderWithinDay: 1,
         }}
         journey={journey}
       />
@@ -161,35 +162,10 @@ export function ActivityClient({
 
   const isSubmitting = createActivity.isPending || updateActivity.isPending;
 
-  /**
-   * Helper function to format activity date consistently for API submission
-   * @param date The date to format (can be Date object, string, or unknown)
-   * @returns ISO string format of the date
-   */
-  const formatActivityDate = (date: Date | string | unknown): string => {
-    if (date instanceof Date) {
-      return date.toISOString();
-    }
-
-    if (typeof date === "string") {
-      // Ensure string dates are in ISO format
-      try {
-        // Try to parse and reformat to ensure consistency
-        return new Date(date).toISOString();
-      } catch (_) {
-        // If parsing fails, return the original string
-        return date;
-      }
-    }
-
-    // Fallback to current date if input is invalid
-    return new Date().toISOString();
-  };
-
   // Event handlers
   const handleSubmit = (data: ActivityCreationFormValues) => {
     // Format the activity date consistently
-    const formattedDate = formatActivityDate(data.activityDate);
+    const formattedDate = formatToISOStringDate(data.activityDate);
 
     // Validate that the activity date is within the journey date range
     if (journey.startDate && journey.endDate) {
