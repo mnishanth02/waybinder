@@ -3,6 +3,7 @@
 import type { CreateActivityType, UpdateActivityType } from "@/features/api-types/activity";
 import {
   createActivity,
+  deleteActivity,
   getActivitiesByJourneyId,
   getActivityByUniqueId,
   updateActivity,
@@ -13,15 +14,16 @@ import { activityKeys } from "./query-keys";
 
 /**
  * Hook to create a new activity
+ * @param options Optional configuration including success callback
+ * @returns Mutation object for creating an activity
  */
 export const useCreateActivity = (options?: { onSuccess?: () => void }) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateActivityType) => {
-      // Convert form values to API format
-      // Only include necessary fields and ensure proper types
-      const apiData = {
+      // Only include necessary fields to ensure proper types
+      const apiData: CreateActivityType = {
         journeyId: data.journeyId,
         title: data.title,
         activityDate: data.activityDate,
@@ -29,6 +31,12 @@ export const useCreateActivity = (options?: { onSuccess?: () => void }) => {
         content: data.content,
         dayNumber: data.dayNumber,
         orderWithinDay: data.orderWithinDay,
+        distanceKm: data.distanceKm,
+        elevationGainM: data.elevationGainM,
+        elevationLossM: data.elevationLossM,
+        movingTimeSeconds: data.movingTimeSeconds,
+        startTime: data.startTime,
+        endTime: data.endTime,
       };
 
       return createActivity(apiData);
@@ -56,6 +64,8 @@ export const useCreateActivity = (options?: { onSuccess?: () => void }) => {
 
 /**
  * Hook to update an existing activity
+ * @param options Optional configuration including success callback
+ * @returns Mutation object for updating an activity
  */
 export const useUpdateActivity = (options?: { onSuccess?: () => void }) => {
   const queryClient = useQueryClient();
@@ -68,8 +78,8 @@ export const useUpdateActivity = (options?: { onSuccess?: () => void }) => {
       id: string;
       data: Partial<UpdateActivityType>;
     }) => {
-      // Convert form values to API format
-      // Only include necessary fields and ensure proper types
+      // Only include fields that are allowed to be updated
+      // Explicitly omit journeyId as it's not allowed in updates
       const apiData = {
         title: data.title,
         activityDate: data.activityDate,
@@ -77,6 +87,12 @@ export const useUpdateActivity = (options?: { onSuccess?: () => void }) => {
         content: data.content,
         dayNumber: data.dayNumber,
         orderWithinDay: data.orderWithinDay,
+        distanceKm: data.distanceKm,
+        elevationGainM: data.elevationGainM,
+        elevationLossM: data.elevationLossM,
+        movingTimeSeconds: data.movingTimeSeconds,
+        startTime: data.startTime,
+        endTime: data.endTime,
       };
 
       return updateActivity(id, apiData);
@@ -106,7 +122,55 @@ export const useUpdateActivity = (options?: { onSuccess?: () => void }) => {
 };
 
 /**
+ * Hook to delete an activity
+ * @param options Optional configuration including success callback
+ * @returns Mutation object for deleting an activity
+ */
+export const useDeleteActivity = (options?: {
+  onSuccess?: () => void;
+  journeyId?: string; // Optional journeyId to invalidate specific journey queries
+}) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return deleteActivity(id);
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: activityKeys.lists() });
+
+      // If journeyId is provided, invalidate that specific journey's activities
+      if (options?.journeyId) {
+        queryClient.invalidateQueries({
+          queryKey: activityKeys.byJourney(options.journeyId),
+        });
+      }
+
+      // Invalidate the deleted activity's detail query
+      queryClient.invalidateQueries({
+        queryKey: activityKeys.detail(variables),
+      });
+
+      toast.success("Activity deleted successfully");
+
+      // Call custom success handler if provided
+      if (options?.onSuccess) {
+        options.onSuccess();
+      }
+    },
+    onError: (error) => {
+      console.error("Error deleting activity:", error);
+      toast.error("Failed to delete activity");
+    },
+  });
+};
+
+/**
  * Hook to get activities by journey ID
+ * @param journeyId Journey unique ID
+ * @param options Query options including pagination, filtering, and enabled flag
+ * @returns Query result with activities and metadata
  */
 export const useGetActivitiesByJourneyId = (
   journeyId: string,
@@ -131,17 +195,20 @@ export const useGetActivitiesByJourneyId = (
         sortBy: options?.sortBy,
         sortOrder: options?.sortOrder,
       }),
-    enabled: options?.enabled !== false,
+    enabled: options?.enabled !== false && !!journeyId,
   });
 };
 
 /**
  * Hook to get an activity by unique ID
+ * @param uniqueId Activity unique ID
+ * @param options Query options including enabled flag
+ * @returns Query result with activity data
  */
 export const useGetActivityByUniqueId = (uniqueId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: activityKeys.byUniqueId(uniqueId),
     queryFn: () => getActivityByUniqueId(uniqueId),
-    enabled: uniqueId !== "new" && options?.enabled !== false,
+    enabled: uniqueId !== "new" && options?.enabled !== false && !!uniqueId,
   });
 };

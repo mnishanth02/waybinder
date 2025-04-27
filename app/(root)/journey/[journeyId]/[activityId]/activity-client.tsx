@@ -47,7 +47,7 @@ function ActivityFormSection({
       <ActivityForm
         onSubmit={onSubmit}
         defaultValues={{
-          activityDate: new Date().toISOString(),
+          activityDate: new Date(),
         }}
       />
     );
@@ -65,7 +65,7 @@ function ActivityFormSection({
   const typedActivityData = activityData as {
     title: string;
     journeyId: string;
-    activityDate: string;
+    activityDate: Date;
     activityType?: string;
     content?: string;
     distanceKm?: number;
@@ -145,10 +145,16 @@ export function ActivityClient({
       const formattedData = {
         ...data,
         journeyId,
+        activityDate: data.activityDate.toISOString(),
       };
       createActivity.mutate(formattedData);
     } else if (activityData) {
-      updateActivity.mutate({ id: activityData.id, data });
+      // Format date before sending to API
+      const formattedData = {
+        ...data,
+        activityDate: data.activityDate.toISOString(),
+      };
+      updateActivity.mutate({ id: activityData.id, data: formattedData });
     }
   };
 

@@ -1,17 +1,24 @@
 import { insertActivitySchema } from "@/server/db/schema";
-import type { z } from "zod";
+import { z } from "zod";
 
 // Create specific validation schemas for different operations
-export const CreateActivitySchema = insertActivitySchema.omit({
-  id: true,
-  activityUniqueId: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// For create, we expect journeyUniqueId instead of journeyId
+export const CreateActivitySchema = insertActivitySchema
+  .omit({
+    id: true,
+    activityUniqueId: true,
+    createdAt: true,
+    updatedAt: true,
+    journeyId: true, // Remove the journeyId field
+  })
+  .extend({
+    journeyId: z.string().min(1, { message: "Journey ID is required" }), // Add journeyId as string (will be journeyUniqueId)
+  });
 
+// For update, we don't allow changing the journeyId
 export const UpdateActivitySchema = insertActivitySchema.partial().omit({
   id: true,
-  journeyId: true,
+  journeyId: true, // Cannot update journeyId
   activityUniqueId: true,
   createdAt: true,
   updatedAt: true,

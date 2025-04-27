@@ -17,4 +17,4 @@ export {
   getActivityByUniqueId,
   updateActivity,
   deleteActivity,
-} from "./article-api";
+} from "./activity-api";

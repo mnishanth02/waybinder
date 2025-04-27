@@ -12,12 +12,12 @@ import { type SQL, and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
  * @access Private
  */
 export const createActivity = async (
-  body: Omit<ActivityTypeInsert, "activityUniqueId">,
+  body: Omit<ActivityTypeInsert, "activityUniqueId" | "journeyId"> & { journeyId: string },
   userId: string
 ) => {
   // Verify that the journey exists and the user has access to it
   const journey = await db.query.journeys.findFirst({
-    where: eq(journeys.id, body.journeyId),
+    where: eq(journeys.journeyUniqueId, body.journeyId),
   });
 
   if (!journey) {
@@ -42,9 +42,10 @@ export const createActivity = async (
   // Generate a unique ID for the activity
   const activityUniqueId = generateActivityUniqueId(body.title);
 
-  // Create the activity with the generated values
+  // Create the activity with the generated values and the actual journey ID
   const newActivity: ActivityTypeInsert = {
     ...body,
+    journeyId: journey.id, // Use the actual journey ID from the database
     activityUniqueId,
   };
 

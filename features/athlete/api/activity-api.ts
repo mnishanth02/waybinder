@@ -63,17 +63,16 @@ const transformActivityDates = (activities: Record<string, unknown>[]): Activity
 
 /**
  * Create a new activity
+ * @param data Activity data to create
+ * @returns Created activity data
  */
 export const createActivity = async (data: CreateActivityType): Promise<ActivityTypeSelect> => {
-  console.log(data);
-
   const response = await client.api.activity.$post({
     json: data,
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData ? JSON.stringify(errorData) : "Failed to create activity");
+    return handleApiError(response, "Failed to create activity");
   }
 
   const result = (await response.json()) as ApiResponse<ActivityTypeSelect>;
@@ -87,6 +86,8 @@ export const createActivity = async (data: CreateActivityType): Promise<Activity
 
 /**
  * Get all activities with optional filtering and pagination
+ * @param params Query parameters for filtering and pagination
+ * @returns Activities and pagination metadata
  */
 export const getActivities = async (
   params?: ActivityQueryParams
@@ -99,13 +100,13 @@ export const getActivities = async (
   });
 
   if (!response.ok) {
-    await handleApiError(response, "Failed to fetch activities");
+    return handleApiError(response, "Failed to fetch activities");
   }
 
   const result = await response.json();
 
   if (!result.success) {
-    throw new Error("Failed to fetch activities");
+    throw new Error(result.message || "Failed to fetch activities");
   }
 
   // Transform activity dates
@@ -119,6 +120,9 @@ export const getActivities = async (
 
 /**
  * Get activities by journey ID
+ * @param journeyId Journey unique ID
+ * @param params Query parameters for filtering and pagination
+ * @returns Activities and pagination metadata
  */
 export const getActivitiesByJourneyId = async (
   journeyId: string,
@@ -133,13 +137,13 @@ export const getActivitiesByJourneyId = async (
   });
 
   if (!response.ok) {
-    await handleApiError(response, `Failed to fetch activities for journey ${journeyId}`);
+    return handleApiError(response, `Failed to fetch activities for journey ${journeyId}`);
   }
 
   const result = await response.json();
 
   if (!result.success) {
-    throw new Error(`Failed to fetch activities for journey ${journeyId}`);
+    throw new Error(result.message || `Failed to fetch activities for journey ${journeyId}`);
   }
 
   // Transform activity dates
@@ -153,6 +157,8 @@ export const getActivitiesByJourneyId = async (
 
 /**
  * Get activity by ID
+ * @param id Activity ID
+ * @returns Activity data
  */
 export const getActivityById = async (id: string): Promise<ActivityTypeSelect> => {
   const response = await client.api.activity[":id"].$get({
@@ -160,10 +166,7 @@ export const getActivityById = async (id: string): Promise<ActivityTypeSelect> =
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(
-      errorData ? JSON.stringify(errorData) : `Failed to fetch activity with ID ${id}`
-    );
+    return handleApiError(response, `Failed to fetch activity with ID ${id}`);
   }
 
   const result = (await response.json()) as ApiResponse<ActivityTypeSelect>;
@@ -177,6 +180,8 @@ export const getActivityById = async (id: string): Promise<ActivityTypeSelect> =
 
 /**
  * Get activity by unique ID
+ * @param uniqueId Activity unique ID
+ * @returns Activity data
  */
 export const getActivityByUniqueId = async (uniqueId: string): Promise<ActivityTypeSelect> => {
   const response = await client.api.activity.unique[":id"].$get({
@@ -184,10 +189,7 @@ export const getActivityByUniqueId = async (uniqueId: string): Promise<ActivityT
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(
-      errorData ? JSON.stringify(errorData) : `Failed to fetch activity with unique ID ${uniqueId}`
-    );
+    return handleApiError(response, `Failed to fetch activity with unique ID ${uniqueId}`);
   }
 
   const result = (await response.json()) as ApiResponse<ActivityTypeSelect>;
@@ -201,6 +203,9 @@ export const getActivityByUniqueId = async (uniqueId: string): Promise<ActivityT
 
 /**
  * Update an activity
+ * @param id Activity ID
+ * @param data Activity data to update
+ * @returns Updated activity data
  */
 export const updateActivity = async (
   id: string,
@@ -212,10 +217,7 @@ export const updateActivity = async (
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(
-      errorData ? JSON.stringify(errorData) : `Failed to update activity with ID ${id}`
-    );
+    return handleApiError(response, `Failed to update activity with ID ${id}`);
   }
 
   const result = (await response.json()) as ApiResponse<ActivityTypeSelect>;
@@ -229,6 +231,8 @@ export const updateActivity = async (
 
 /**
  * Delete an activity
+ * @param id Activity ID
+ * @returns Deleted activity ID
  */
 export const deleteActivity = async (id: string): Promise<{ id: string }> => {
   const response = await client.api.activity[":id"].$delete({
@@ -236,10 +240,7 @@ export const deleteActivity = async (id: string): Promise<{ id: string }> => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(
-      errorData ? JSON.stringify(errorData) : `Failed to delete activity with ID ${id}`
-    );
+    return handleApiError(response, `Failed to delete activity with ID ${id}`);
   }
 
   const result = (await response.json()) as ApiResponse<{ id: string }>;
@@ -248,5 +249,5 @@ export const deleteActivity = async (id: string): Promise<{ id: string }> => {
     throw new Error(result.message || `Failed to delete activity with ID ${id}`);
   }
 
-  return result.data;
+  return { id };
 };

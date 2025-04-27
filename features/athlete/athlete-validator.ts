@@ -23,7 +23,7 @@ export type JourneyCreationFormValues = z.infer<typeof journeySchema>;
 
 export const activitySchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
-  activityDate: z.string().min(1, { message: "Activity date is required" }),
+  activityDate: z.date({ invalid_type_error: "Invalid date format" }),
   dayNumber: z.number().optional(),
   orderWithinDay: z.number().optional(),
   activityType: createEnumSchema(ACTIVITY_TYPES, "Please select an activity type").default("other"),
