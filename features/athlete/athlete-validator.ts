@@ -1,4 +1,4 @@
-import { JOURNEY_TYPES, PRIVACY_STATUSES, createEnumSchema } from "@/types/enums";
+import { ACTIVITY_TYPES, JOURNEY_TYPES, PRIVACY_STATUSES, createEnumSchema } from "@/types/enums";
 import { z } from "zod";
 
 export const journeySchema = z.object({
@@ -20,3 +20,21 @@ export const journeySchema = z.object({
 });
 
 export type JourneyCreationFormValues = z.infer<typeof journeySchema>;
+
+export const activitySchema = z.object({
+  journeyId: z.string().min(1, { message: "Journey ID is required" }),
+  title: z.string().min(3, { message: "Title must be at least 3 characters" }),
+  activityDate: z.string().min(1, { message: "Activity date is required" }),
+  dayNumber: z.number().optional(),
+  orderWithinDay: z.number().optional(),
+  activityType: createEnumSchema(ACTIVITY_TYPES, "Please select an activity type").default("other"),
+  content: z.string().optional(),
+  distanceKm: z.number().optional(),
+  elevationGainM: z.number().optional(),
+  elevationLossM: z.number().optional(),
+  movingTimeSeconds: z.number().optional(),
+  startTime: z.date().optional(),
+  endTime: z.date().optional(),
+});
+
+export type ActivityCreationFormValues = z.infer<typeof activitySchema>;

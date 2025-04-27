@@ -9,3 +9,14 @@ export const journeyKeys = {
   unique: (id: string) => [...journeyKeys.all, "unique", id] as const,
   slug: (slug: string) => [...journeyKeys.all, "slug", slug] as const,
 };
+
+// Query keys for activities - for consistent cache management
+export const activityKeys = {
+  all: ["activities"] as const,
+  lists: () => [...activityKeys.all, "list"] as const,
+  list: (filters: unknown) => [...activityKeys.lists(), { filters }] as const,
+  details: () => [...activityKeys.all, "detail"] as const,
+  detail: (id: string) => [...activityKeys.details(), id] as const,
+  journey: (journeyId: string) => [...activityKeys.all, "journey", journeyId] as const,
+  unique: (id: string) => [...activityKeys.all, "unique", id] as const,
+};

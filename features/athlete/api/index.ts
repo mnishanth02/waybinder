@@ -8,3 +8,13 @@ export {
   updateJourney,
   deleteJourney,
 } from "./journey-api";
+
+export {
+  createActivity,
+  getActivities,
+  getActivitiesByJourneyId,
+  getActivityById,
+  getActivityByUniqueId,
+  updateActivity,
+  deleteActivity,
+} from "./article-api";
