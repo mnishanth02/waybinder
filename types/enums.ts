@@ -44,8 +44,12 @@ export type JourneyType = (typeof JOURNEY_TYPES)[number];
 export const journeyTypeSchema = z.enum(JOURNEY_TYPES);
 
 //  Activity Type
+// TODO: Fix typos in enum values in a future update:
+// - "hikeing" should be "hiking"
+// - "mountaineer" should be "mountaineering"
+// This will require a database migration and code updates
 export const ACTIVITY_TYPES = [
-  "hikeing",
+  "hikeing", // Typo: should be "hiking"
   "running",
   "cycling",
   "driving",
@@ -54,7 +58,7 @@ export const ACTIVITY_TYPES = [
   "rest",
   "camping",
   "climbing",
-  "mountaineer",
+  "mountaineer", // Typo: should be "mountaineering"
   "sightseeing",
   "travel",
   "other",

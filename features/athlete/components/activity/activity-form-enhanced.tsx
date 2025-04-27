@@ -9,11 +9,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { calculateDayNumber } from "@/lib/utils/date-helpers";
+import type { JourneyTypeSelect } from "@/server/db/schema";
 import { ACTIVITY_TYPES, createSelectOptions } from "@/types/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FileUp, Upload, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { type ActivityCreationFormValues, activitySchema } from "../../athlete-validator";
 
@@ -23,10 +25,16 @@ const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
 interface ActivityFormProps {
   onSubmit: (data: ActivityCreationFormValues) => void;
   defaultValues?: Partial<ActivityCreationFormValues>;
-  isSubmitting?: boolean;
+  isSubmitting?: boolean; // Kept for API compatibility but not used internally
+  journey?: JourneyTypeSelect;
 }
 
-export function ActivityForm({ onSubmit, defaultValues }: ActivityFormProps) {
+export function ActivityForm({
+  onSubmit,
+  defaultValues,
+  // isSubmitting is not used internally but kept for API compatibility
+  journey,
+}: ActivityFormProps) {
   // State for file uploads
   const [gpxFile, setGpxFile] = useState<File | null>(null);
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
@@ -46,19 +54,48 @@ export function ActivityForm({ onSubmit, defaultValues }: ActivityFormProps) {
     resolver: zodResolver(activitySchema),
     defaultValues: {
       title: "",
-      activityDate: new Date().toISOString(),
+      activityDate: new Date(),
       activityType: "other",
       content: "",
+      dayNumber: defaultValues?.dayNumber,
+      orderWithinDay: defaultValues?.orderWithinDay || 999,
       ...defaultValues,
     },
   });
 
   const {
     formState: { errors },
+    watch,
+    setValue,
   } = form;
 
+  // Watch for activity date changes to auto-calculate day number
+  const activityDate = watch("activityDate") as Date | string | undefined;
+
+  // Auto-calculate day number when activity date changes
   useEffect(() => {
-    if (Object.keys(errors).length > 0) {
+    if (!journey?.startDate || !activityDate) return;
+
+    let dateString: string | null | undefined = null;
+
+    if (activityDate instanceof Date) {
+      dateString = activityDate.toISOString().split("T")[0];
+    } else if (typeof activityDate === "string") {
+      dateString = activityDate.split("T")[0];
+    }
+
+    if (!dateString) return;
+
+    const dayNum = calculateDayNumber(dateString, journey.startDate);
+    if (dayNum) {
+      setValue("dayNumber", dayNum);
+    }
+  }, [activityDate, journey?.startDate, setValue]);
+
+  // Monitor form errors silently in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development" && Object.keys(errors).length > 0) {
+      // Silent in production, log only in development
       console.log("Form errors:", errors);
     }
   }, [errors]);
@@ -66,18 +103,24 @@ export function ActivityForm({ onSubmit, defaultValues }: ActivityFormProps) {
   // Handle GPX file upload
   const handleGpxFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setGpxFile(file);
+    if (!file) return;
 
-      // In a real implementation, we would parse the GPX file here
-      // and extract the stats. For now, we'll just simulate it.
-      setGpxStats({
-        distance: "12.5 km",
-        duration: "1:45:30",
-        elevation: "450 m",
-        pace: "8:24/km",
-      });
-    }
+    setGpxFile(file);
+
+    // TODO: Implement actual GPX parsing using the plan in docs/guides/enhanced-mapgl.md
+    // This is a placeholder that will be replaced with actual GPX parsing
+    // when the GPS file management system is implemented
+    setGpxStats({
+      distance: "12.5 km", // Placeholder value
+      duration: "1:45:30", // Placeholder value
+      elevation: "450 m", // Placeholder value
+      pace: "8:24/km", // Placeholder value
+    });
+
+    // In the future, we'll set form values based on parsed data:
+    // setValue("distanceKm", parsedData.distance);
+    // setValue("elevationGainM", parsedData.elevationGain);
+    // setValue("movingTimeSeconds", parsedData.movingTime);
   };
 
   // Handle photo uploads
@@ -122,11 +165,14 @@ export function ActivityForm({ onSubmit, defaultValues }: ActivityFormProps) {
     };
   }, [photosPreviews]);
 
-  const handleSubmit = (values: ActivityCreationFormValues) => {
-    // Here we would handle file uploads and then submit the form
-    // For now, just pass the values to the parent component
-    onSubmit(values);
-  };
+  const handleSubmit = useCallback(
+    (values: ActivityCreationFormValues) => {
+      // Here we would handle file uploads and then submit the form
+      // For now, just pass the values to the parent component
+      onSubmit(values);
+    },
+    [onSubmit]
+  );
 
   return (
     <Form {...form}>
@@ -140,6 +186,8 @@ export function ActivityForm({ onSubmit, defaultValues }: ActivityFormProps) {
                 nameInSchema={"activityDate"}
                 fieldTitle={"Date & Time"}
                 placeholder={"Select activity date"}
+                startDate={journey?.startDate ? new Date(journey.startDate) : undefined}
+                endDate={journey?.endDate ? new Date(journey.endDate) : undefined}
               />
             </div>
 
@@ -159,6 +207,10 @@ export function ActivityForm({ onSubmit, defaultValues }: ActivityFormProps) {
                 placeholder={"Enter activity title"}
               />
             </div>
+
+            {/* Hidden fields for day number and order */}
+            <input type="hidden" {...form.register("dayNumber")} />
+            <input type="hidden" {...form.register("orderWithinDay")} />
           </div>
         </div>
 

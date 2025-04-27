@@ -1,15 +1,14 @@
 "use client";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import JourneySheet from "@/features/athlete/components/journey-sheet";
 import { useGetJourneyByUniqueId } from "@/features/athlete/hooks";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import DaysActivitiesAccordion from "./days-activities-accordion";
 import DeleteJourneyDialog from "./delete-journey-dialog";
 import JourneyHeader from "./journey-header";
 
@@ -83,18 +82,14 @@ const JourneyDetailsClient = ({ journeyId }: JourneyDetailsClientProps) => {
         <JourneyHeader journey={journeyData} onDeleteClick={() => setIsDeleteDialogOpen(true)} />
       </div>
 
-      {/* Activities Section Placeholder */}
-      <Card className="mt-4">
-        <CardContent className="p-3">
-          <div className="flex flex-between">
-            <h2 className="mb-4 font-semibold text-xl">Activities</h2>
-            <Link href={`/journey/${journeyId}/new`} className={cn(buttonVariants())}>
-              Add Activity
-            </Link>
-          </div>
-          <p className="text-muted-foreground">
-            This section will be implemented in the future to manage journey activities.
-          </p>
+      {/* Days & Activities Section */}
+      <Card className="mt-6">
+        <CardContent className="p-6">
+          <DaysActivitiesAccordion
+            journeyId={journeyId}
+            startDate={journeyData.startDate}
+            endDate={journeyData.endDate}
+          />
         </CardContent>
       </Card>
 

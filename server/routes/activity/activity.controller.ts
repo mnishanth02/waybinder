@@ -114,8 +114,21 @@ export const getActivities = async (params: {
   let whereClause: SQL<unknown> | undefined = undefined;
 
   if (journeyId) {
-    const journeyCondition = eq(activities.journeyId, journeyId);
-    whereClause = whereClause ? and(whereClause, journeyCondition) : journeyCondition;
+    // First try to find the journey by its unique ID
+    const journey = await db.query.journeys.findFirst({
+      where: eq(journeys.journeyUniqueId, journeyId),
+      columns: { id: true },
+    });
+
+    // If found by unique ID, use the actual database ID
+    if (journey) {
+      const journeyCondition = eq(activities.journeyId, journey.id);
+      whereClause = whereClause ? and(whereClause, journeyCondition) : journeyCondition;
+    } else {
+      // Otherwise, try using the ID directly (might be the actual database ID)
+      const journeyCondition = eq(activities.journeyId, journeyId);
+      whereClause = whereClause ? and(whereClause, journeyCondition) : journeyCondition;
+    }
   }
 
   if (activityType) {
@@ -207,9 +220,18 @@ export const getActivitiesByJourneyId = async (
     sortOrder?: "asc" | "desc";
   }
 ) => {
+  // First check if the journeyId is a unique ID or a database ID
+  const journey = await db.query.journeys.findFirst({
+    where: eq(journeys.journeyUniqueId, journeyId),
+    columns: { id: true },
+  });
+
+  // If found by unique ID, use the actual database ID
+  const actualJourneyId = journey ? journey.id : journeyId;
+
   return getActivities({
     ...params,
-    journeyId,
+    journeyId: actualJourneyId,
   });
 };
 

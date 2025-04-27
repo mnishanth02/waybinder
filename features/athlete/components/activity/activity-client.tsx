@@ -4,17 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ActivityCreationFormValues } from "@/features/athlete/athlete-validator";
-import { ActivityForm } from "@/features/athlete/components/activity/activity-form";
+import { ActivityForm } from "@/features/athlete/components/activity/activity-form-enhanced";
 import {
   useCreateActivity,
   useGetActivityByUniqueId,
   useUpdateActivity,
 } from "@/features/athlete/hooks/use-activity-queries";
+import { calculateDayNumber } from "@/lib/utils/date-helpers";
 import type { JourneyTypeSelect } from "@/server/db/schema";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { parseAsString, useQueryState } from "nuqs";
 import { useState } from "react";
+import { toast } from "sonner";
 
 // Helper function for formatting dates
 const formatUTCForDisplay = (date: Date | string | null, formatString = "PPP"): string => {
@@ -36,19 +39,42 @@ function ActivityFormSection({
   activityData,
   isLoadingActivity,
   onSubmit,
+  journey,
 }: {
   isNewActivity: boolean;
   activityData: Record<string, unknown> | null;
   isLoadingActivity: boolean;
   onSubmit: (data: ActivityCreationFormValues) => void;
+  journey: JourneyTypeSelect;
 }) {
+  // Use nuqs for URL query parameters
+  const [dayParam] = useQueryState("day", parseAsString);
+  const [dateParam] = useQueryState("date", parseAsString);
+
+  // Default date is either from URL params, or current date
+  const defaultDate = dateParam ? parseISO(dateParam) : new Date();
+
+  // Default day number is either from URL params, or calculated from the date
+  const defaultDayNumber = dayParam
+    ? Number.parseInt(dayParam, 10)
+    : journey?.startDate
+      ? (calculateDayNumber(
+          defaultDate.toISOString().split("T")[0] || "",
+          String(journey.startDate)
+        ) ?? undefined)
+      : undefined;
+
   if (isNewActivity) {
     return (
       <ActivityForm
         onSubmit={onSubmit}
         defaultValues={{
-          activityDate: new Date(),
+          activityDate: defaultDate,
+          dayNumber: defaultDayNumber,
+          // Default order within day to the end
+          orderWithinDay: 999,
         }}
+        journey={journey}
       />
     );
   }
@@ -61,21 +87,16 @@ function ActivityFormSection({
     return <div className="py-8 text-center">Activity not found</div>;
   }
 
-  // Type assertion to handle the activity data
-  const typedActivityData = activityData as {
-    title: string;
-    journeyId: string;
-    activityDate: Date;
-    activityType?: string;
-    content?: string;
-    distanceKm?: number;
-    elevationGainM?: number;
-    elevationLossM?: number;
-    movingTimeSeconds?: number;
-    dayNumber?: number;
-    orderWithinDay?: number;
-    startTime?: string;
-    endTime?: string;
+  // Create a properly typed version of the activity data
+  // This ensures we only access properties that exist on the ActivityTypeSelect type
+  const typedActivityData = {
+    title: activityData.title as string,
+    journeyId: activityData.journeyId as string,
+    activityDate: activityData.activityDate as Date,
+    activityType: activityData.activityType as string | undefined,
+    content: activityData.content as string | undefined,
+    dayNumber: activityData.dayNumber as number | undefined,
+    orderWithinDay: activityData.orderWithinDay as number | undefined,
   };
 
   return (
@@ -89,6 +110,7 @@ function ActivityFormSection({
         dayNumber: typedActivityData.dayNumber,
         orderWithinDay: typedActivityData.orderWithinDay,
       }}
+      journey={journey}
     />
   );
 }
@@ -139,20 +161,66 @@ export function ActivityClient({
 
   const isSubmitting = createActivity.isPending || updateActivity.isPending;
 
+  /**
+   * Helper function to format activity date consistently for API submission
+   * @param date The date to format (can be Date object, string, or unknown)
+   * @returns ISO string format of the date
+   */
+  const formatActivityDate = (date: Date | string | unknown): string => {
+    if (date instanceof Date) {
+      return date.toISOString();
+    }
+
+    if (typeof date === "string") {
+      // Ensure string dates are in ISO format
+      try {
+        // Try to parse and reformat to ensure consistency
+        return new Date(date).toISOString();
+      } catch (_) {
+        // If parsing fails, return the original string
+        return date;
+      }
+    }
+
+    // Fallback to current date if input is invalid
+    return new Date().toISOString();
+  };
+
   // Event handlers
   const handleSubmit = (data: ActivityCreationFormValues) => {
+    // Format the activity date consistently
+    const formattedDate = formatActivityDate(data.activityDate);
+
+    // Validate that the activity date is within the journey date range
+    if (journey.startDate && journey.endDate) {
+      const activityDate = new Date(formattedDate);
+      const journeyStartDate = new Date(journey.startDate);
+      const journeyEndDate = new Date(journey.endDate);
+
+      // Set time to 00:00:00 for all dates to compare only the date part
+      activityDate.setHours(0, 0, 0, 0);
+      journeyStartDate.setHours(0, 0, 0, 0);
+      journeyEndDate.setHours(0, 0, 0, 0);
+
+      if (activityDate < journeyStartDate || activityDate > journeyEndDate) {
+        toast.error(
+          `Activity date must be between ${formatUTCForDisplay(journeyStartDate, "MMM d, yyyy")} and ${formatUTCForDisplay(journeyEndDate, "MMM d, yyyy")}`
+        );
+        return;
+      }
+    }
+
     if (isNewActivity) {
       const formattedData = {
         ...data,
         journeyId,
-        activityDate: data.activityDate.toISOString(),
+        activityDate: formattedDate,
       };
       createActivity.mutate(formattedData);
     } else if (activityData) {
-      // Format date before sending to API
       const formattedData = {
         ...data,
-        activityDate: data.activityDate.toISOString(),
+        activityDate: formattedDate,
       };
       updateActivity.mutate({ id: activityData.id, data: formattedData });
     }
@@ -233,6 +301,7 @@ export function ActivityClient({
           activityData={activityData || null}
           isLoadingActivity={isLoadingActivity}
           onSubmit={handleSubmit}
+          journey={journey}
         />
       </div>
     </div>

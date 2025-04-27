@@ -1,5 +1,5 @@
 import { getJourneyByUniqueId } from "@/features/athlete/api";
-import { ActivityClient } from "./activity-client";
+import { ActivityClient } from "@/features/athlete/components/activity/activity-client";
 
 interface ActivityDetailsPageProps {
   params: Promise<{
