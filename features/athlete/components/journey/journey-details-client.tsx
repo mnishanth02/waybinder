@@ -3,7 +3,7 @@
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import JourneySheet from "@/features/athlete/coomponents/journey-sheet";
+import JourneySheet from "@/features/athlete/components/journey-sheet";
 import { useGetJourneyByUniqueId } from "@/features/athlete/hooks";
 import { cn } from "@/lib/utils";
 import Link from "next/link";

@@ -1,6 +1,6 @@
 "use client";
 import Loader from "@/components/common/loader";
-import AthleteDashboard from "@/features/athlete/coomponents/dashboard";
+import AthleteDashboard from "@/features/athlete/components/dashboard";
 import { useGetAthleteByUniqueId } from "@/features/onboarding/hooks";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";

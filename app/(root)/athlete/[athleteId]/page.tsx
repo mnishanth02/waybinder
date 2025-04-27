@@ -3,7 +3,7 @@ import { athleteKeys } from "@/features/onboarding/hooks/query-keys";
 import { getQueryClient } from "@/lib/utils/get-query-client";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { notFound } from "next/navigation";
-import AthleteClient from "../../../../features/athlete/coomponents/athlete-client";
+import AthleteClient from "../../../../features/athlete/components/athlete-client";
 
 interface AthletePageProps {
   params: Promise<{ athleteId: string }>;

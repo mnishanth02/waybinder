@@ -15,7 +15,7 @@ import { FileUp, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { type ActivityCreationFormValues, activitySchema } from "../athlete-validator";
+import { type ActivityCreationFormValues, activitySchema } from "../../athlete-validator";
 
 // Create select options for activity types
 const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
@@ -24,10 +24,9 @@ interface ActivityFormProps {
   onSubmit: (data: ActivityCreationFormValues) => void;
   defaultValues?: Partial<ActivityCreationFormValues>;
   isSubmitting?: boolean;
-  journeyId: string;
 }
 
-export function ActivityForm({ onSubmit, defaultValues, journeyId }: ActivityFormProps) {
+export function ActivityForm({ onSubmit, defaultValues }: ActivityFormProps) {
   // State for file uploads
   const [gpxFile, setGpxFile] = useState<File | null>(null);
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
@@ -46,7 +45,6 @@ export function ActivityForm({ onSubmit, defaultValues, journeyId }: ActivityFor
   const form = useForm<ActivityCreationFormValues>({
     resolver: zodResolver(activitySchema),
     defaultValues: {
-      journeyId,
       title: "",
       activityDate: new Date().toISOString(),
       activityType: "other",

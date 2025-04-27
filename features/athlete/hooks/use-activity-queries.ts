@@ -1,12 +1,12 @@
 "use client";
 
+import type { CreateActivityType, UpdateActivityType } from "@/features/api-types/activity";
 import {
   createActivity,
   getActivitiesByJourneyId,
   getActivityByUniqueId,
   updateActivity,
 } from "@/features/athlete/api";
-import type { ActivityCreationFormValues } from "@/features/athlete/athlete-validator";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { activityKeys } from "./query-keys";
@@ -18,7 +18,7 @@ export const useCreateActivity = (options?: { onSuccess?: () => void }) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: ActivityCreationFormValues) => {
+    mutationFn: async (data: CreateActivityType) => {
       // Convert form values to API format
       // Only include necessary fields and ensure proper types
       const apiData = {
@@ -27,10 +27,6 @@ export const useCreateActivity = (options?: { onSuccess?: () => void }) => {
         activityDate: data.activityDate,
         activityType: data.activityType,
         content: data.content,
-        distanceKm: data.distanceKm,
-        elevationGainM: data.elevationGainM,
-        elevationLossM: data.elevationLossM,
-        movingTimeSeconds: data.movingTimeSeconds,
         dayNumber: data.dayNumber,
         orderWithinDay: data.orderWithinDay,
       };
@@ -70,7 +66,7 @@ export const useUpdateActivity = (options?: { onSuccess?: () => void }) => {
       data,
     }: {
       id: string;
-      data: Partial<ActivityCreationFormValues>;
+      data: Partial<UpdateActivityType>;
     }) => {
       // Convert form values to API format
       // Only include necessary fields and ensure proper types
@@ -79,10 +75,6 @@ export const useUpdateActivity = (options?: { onSuccess?: () => void }) => {
         activityDate: data.activityDate,
         activityType: data.activityType,
         content: data.content,
-        distanceKm: data.distanceKm,
-        elevationGainM: data.elevationGainM,
-        elevationLossM: data.elevationLossM,
-        movingTimeSeconds: data.movingTimeSeconds,
         dayNumber: data.dayNumber,
         orderWithinDay: data.orderWithinDay,
       };

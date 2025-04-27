@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ActivityCreationFormValues } from "@/features/athlete/athlete-validator";
-import { ActivityForm } from "@/features/athlete/components/activity-form";
+import { ActivityForm } from "@/features/athlete/components/activity/activity-form";
 import {
   useCreateActivity,
   useGetActivityByUniqueId,
@@ -32,13 +32,11 @@ interface ActivityClientProps {
 
 // Helper component to render the activity form
 function ActivityFormSection({
-  journeyId,
   isNewActivity,
   activityData,
   isLoadingActivity,
   onSubmit,
 }: {
-  journeyId: string;
   isNewActivity: boolean;
   activityData: Record<string, unknown> | null;
   isLoadingActivity: boolean;
@@ -48,9 +46,7 @@ function ActivityFormSection({
     return (
       <ActivityForm
         onSubmit={onSubmit}
-        journeyId={journeyId}
         defaultValues={{
-          journeyId,
           activityDate: new Date().toISOString(),
         }}
       />
@@ -85,17 +81,11 @@ function ActivityFormSection({
   return (
     <ActivityForm
       onSubmit={onSubmit}
-      journeyId={journeyId}
       defaultValues={{
         title: typedActivityData.title,
-        journeyId: typedActivityData.journeyId,
         activityDate: typedActivityData.activityDate,
         activityType: typedActivityData.activityType,
         content: typedActivityData.content,
-        distanceKm: typedActivityData.distanceKm,
-        elevationGainM: typedActivityData.elevationGainM,
-        elevationLossM: typedActivityData.elevationLossM,
-        movingTimeSeconds: typedActivityData.movingTimeSeconds,
         dayNumber: typedActivityData.dayNumber,
         orderWithinDay: typedActivityData.orderWithinDay,
       }}
@@ -152,7 +142,11 @@ export function ActivityClient({
   // Event handlers
   const handleSubmit = (data: ActivityCreationFormValues) => {
     if (isNewActivity) {
-      createActivity.mutate(data);
+      const formattedData = {
+        ...data,
+        journeyId,
+      };
+      createActivity.mutate(formattedData);
     } else if (activityData) {
       updateActivity.mutate({ id: activityData.id, data });
     }
@@ -229,7 +223,6 @@ export function ActivityClient({
       {/* Activity form */}
       <div className=" mx-auto max-w-6xl">
         <ActivityFormSection
-          journeyId={journeyId}
           isNewActivity={isNewActivity}
           activityData={activityData || null}
           isLoadingActivity={isLoadingActivity}
