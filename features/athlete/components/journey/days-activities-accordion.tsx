@@ -348,7 +348,6 @@ const Header = memo(
               variant="outline"
               onClick={toggleExpandAll}
               className="flex items-center gap-1.5 transition-all duration-200 hover:bg-primary/10 hover:text-primary"
-              size="sm"
             >
               {expandAllDays ? (
                 <>
@@ -401,7 +400,7 @@ const AccordionContentWrapper = memo(
               value={`day-${day.dayNumber}`}
               className="overflow-hidden rounded-lg border bg-card shadow-sm transition-all duration-200 hover:shadow-md"
             >
-              <AccordionTrigger className="bg-muted/30 px-4 py-4 transition-colors hover:bg-muted/50 hover:no-underline">
+              <AccordionTrigger className="bg-secondary/30 px-4 py-4 transition-colors hover:bg-secondary/50 hover:no-underline">
                 <div className="flex items-center">
                   <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -410,7 +409,7 @@ const AccordionContentWrapper = memo(
                     <span className="font-semibold">{day.formattedDate}</span>
                   </div>
                   {hasActivities && (
-                    <Badge variant="outline" className="ml-3 bg-primary/5">
+                    <Badge variant="outline" className="ml-3 bg-primary/10">
                       {dayActivities.length}{" "}
                       {dayActivities.length === 1 ? "Activity" : "Activities"}
                     </Badge>
