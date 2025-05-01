@@ -2,6 +2,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgTable,
   real,
   text,
@@ -35,6 +36,26 @@ export const activities = pgTable(
     movingTimeSeconds: integer("moving_time_seconds"),
     startTime: timestamp("start_time", { withTimezone: true }),
     endTime: timestamp("end_time", { withTimezone: true }),
+
+    // GPS-related fields
+    geoJsonData: jsonb("geo_json_data").$type<GeoJSON.FeatureCollection>(),
+    originalFileName: text("original_file_name"),
+    originalFileType: text("original_file_type"), // "gpx", "kml", "fit", "tcx"
+    processedStats: jsonb("processed_stats").$type<{
+      totalDistance: number;
+      elevationGain: number;
+      elevationLoss: number;
+      maxElevation: number;
+      minElevation: number;
+      startTime: string;
+      endTime: string;
+      movingTime: number;
+      totalTime: number;
+      averageSpeed: number;
+      maxSpeed: number;
+      simplifiedGeoJson: GeoJSON.FeatureCollection; // For faster rendering at different zoom levels
+    }>(),
+
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
