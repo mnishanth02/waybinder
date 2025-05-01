@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useGetUsers } from "@/features/auth/hooks/use-auth-queries";
+import { formatDateForDisplay, formatDateOnly } from "@/lib/utils/date-utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarIcon, Edit, MapPinIcon, TagIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -120,14 +121,9 @@ const JourneySheet = (props: JourneySheetProps = {}) => {
     }
   }, [journeyId, isOpen, viewMode, isNewJourney, queryClient]);
 
-  // Format date to display in a readable format
+  // Format date to display in a readable format using our date utility
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return formatDateForDisplay(dateString, "MMM d, yyyy");
   };
 
   // Toggle between view and edit modes
@@ -145,11 +141,13 @@ const JourneySheet = (props: JourneySheetProps = {}) => {
   };
 
   const handleSubmit = (data: JourneyCreationFormValues) => {
+    // Use formatDateOnly to ensure we're sending date-only strings without timezone issues
+    // This will format the date as YYYY-MM-DD, which is what the server expects for date fields
     const formattedData = {
       ...data,
       journeyType: data.journeyType,
-      startDate: data.startDate.toISOString(),
-      endDate: data.endDate.toISOString(),
+      startDate: formatDateOnly(data.startDate),
+      endDate: formatDateOnly(data.endDate),
     };
 
     if (isNewJourney) {

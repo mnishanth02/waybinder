@@ -21,7 +21,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { formatUTCForDisplay } from "@/lib/utils/date";
+import { formatDateForDisplay } from "@/lib/utils/date-utils";
 import type { CaptionLabelProps, MonthGridProps } from "react-day-picker";
 
 type Props<S> = {
@@ -215,7 +215,7 @@ export function DatePickerWithLabel<S>({
                   disabled={disabled}
                 >
                   {field.value ? (
-                    formatUTCForDisplay(field.value, "PPP")
+                    formatDateForDisplay(field.value, "PPP")
                   ) : (
                     <span>{placeholder}</span>
                   )}

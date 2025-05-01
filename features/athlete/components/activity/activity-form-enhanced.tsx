@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { calculateDayNumber } from "@/lib/utils/date-helpers";
 import type { JourneyTypeSelect } from "@/server/db/schema";
 import { ACTIVITY_TYPES, createSelectOptions } from "@/types/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,12 +25,8 @@ import {
 // Create select options for activity types
 const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
 
-// Define a form values type that uses string for orderWithinDay (for the select input)
-// and includes dayNumber for internal calculation
-type ActivityFormValues = ActivitySchemaValues & {
-  orderWithinDay: string;
-  dayNumber?: number; // For internal use only, not shown to user
-};
+// Define a form values type that matches ActivitySchemaValues
+type ActivityFormValues = ActivitySchemaValues;
 
 interface ActivityFormProps {
   onSubmit: (data: ActivityCreationFormValues) => void;
@@ -69,7 +64,8 @@ export function ActivityForm({
       activityDate: new Date(),
       activityType: "other",
       content: "",
-      orderWithinDay: "1", // Always use string for select inputs
+      startTime: undefined,
+      endTime: undefined,
     };
 
     // If we have defaultValues from props, merge them
@@ -77,11 +73,6 @@ export function ActivityForm({
       return {
         ...baseDefaults,
         ...defaultValues,
-        // Ensure orderWithinDay is a string for the select input
-        orderWithinDay:
-          defaultValues.orderWithinDay !== undefined
-            ? String(defaultValues.orderWithinDay)
-            : baseDefaults.orderWithinDay,
       };
     }
 
@@ -90,6 +81,7 @@ export function ActivityForm({
 
   // Define the form with proper typing
   const form = useForm<ActivityFormValues>({
+    // Cast the resolver to the correct type
     resolver: zodResolver(activitySchema),
     defaultValues: formDefaultValues,
     mode: "onBlur", // Validate on blur for better UX
@@ -97,42 +89,9 @@ export function ActivityForm({
 
   const {
     formState: { errors },
-    watch,
-    setValue,
   } = form;
 
-  // Watch for activity date changes to auto-calculate day number
-  const activityDate = watch("activityDate") as Date | string | undefined;
-
-  // Auto-calculate day number when activity date changes (internal field, not shown to user)
-  useEffect(() => {
-    if (!journey?.startDate || !activityDate) return;
-
-    let dateString: string | null | undefined = null;
-
-    if (activityDate instanceof Date) {
-      dateString = activityDate.toISOString().split("T")[0];
-    } else if (typeof activityDate === "string") {
-      dateString = activityDate.split("T")[0];
-    }
-
-    if (!dateString) return;
-
-    // Ensure we're using the date part only for both dates
-    const activityDateStr = dateString;
-    const journeyStartDateStr = journey.startDate.split("T")[0] || journey.startDate;
-
-    // Calculate the day number based on the activity date and journey start date
-    const dayNum = calculateDayNumber(activityDateStr, journeyStartDateStr);
-
-    // Store the day number in a hidden field for submission
-    if (dayNum) {
-      setValue("dayNumber", dayNum);
-    } else {
-      // Default to day 1 if calculation fails
-      setValue("dayNumber", 1);
-    }
-  }, [activityDate, journey?.startDate, setValue]);
+  // We no longer need to watch for activity date changes or use setValue
 
   // Monitor form errors silently in development
   useEffect(() => {
@@ -209,16 +168,14 @@ export function ActivityForm({
 
   const handleSubmit = useCallback(
     (values: Record<string, unknown>) => {
-      // Convert orderWithinDay from string to number
       // Convert form values to the expected format
       const formattedValues: ActivityCreationFormValues = {
         title: values.title as string,
         activityDate: values.activityDate as Date,
         activityType: values.activityType as string,
         content: values.content as string | undefined,
-        orderWithinDay: Number(values.orderWithinDay),
-        // Ensure dayNumber is included (calculated from the activity date)
-        dayNumber: typeof values.dayNumber === "number" ? values.dayNumber : 1,
+        startTime: values.startTime as Date | undefined,
+        endTime: values.endTime as Date | undefined,
       };
 
       // Here we would handle file uploads and then submit the form
@@ -246,35 +203,12 @@ export function ActivityForm({
             </div>
 
             <div className="col-span-2 md:col-span-1">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <SelectWithLabel
-                    nameInSchema={"activityType"}
-                    fieldTitle={"Activity Type"}
-                    options={activityTypeOptions}
-                    placeholder={"Select activity type"}
-                  />
-                </div>
-                <div className="col-span-1">
-                  <SelectWithLabel
-                    nameInSchema={"orderWithinDay"}
-                    fieldTitle={"Order"}
-                    options={[
-                      { label: "1", value: "1" },
-                      { label: "2", value: "2" },
-                      { label: "3", value: "3" },
-                      { label: "4", value: "4" },
-                      { label: "5", value: "5" },
-                      { label: "6", value: "6" },
-                      { label: "7", value: "7" },
-                      { label: "8", value: "8" },
-                      { label: "9", value: "9" },
-                      { label: "10", value: "10" },
-                    ]}
-                    placeholder={"Order"}
-                  />
-                </div>
-              </div>
+              <SelectWithLabel
+                nameInSchema={"activityType"}
+                fieldTitle={"Activity Type"}
+                options={activityTypeOptions}
+                placeholder={"Select activity type"}
+              />
             </div>
 
             <div className="col-span-2">

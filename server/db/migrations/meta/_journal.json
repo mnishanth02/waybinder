@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1744636932179,
-      "tag": "0000_tense_lady_ursula",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1744978422775,
-      "tag": "0001_unusual_quasar",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1745045769189,
-      "tag": "0002_green_skullbuster",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1745299630495,
-      "tag": "0003_great_whistler",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1745383501044,
-      "tag": "0004_small_zaladane",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1745384137476,
-      "tag": "0005_clumsy_morph",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1745675130802,
-      "tag": "0006_plain_the_phantom",
+      "when": 1746034883644,
+      "tag": "0000_living_skin",
       "breakpoints": true
     }
   ]

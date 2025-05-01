@@ -10,22 +10,14 @@ import {
   useGetActivityByUniqueId,
   useUpdateActivity,
 } from "@/features/athlete/hooks/use-activity-queries";
-import { formatToISOStringDate } from "@/lib/utils/date";
-import { calculateDayNumber } from "@/lib/utils/date-helpers";
+import { formatDateForDisplay, formatDateRange, isDateWithinRange } from "@/lib/utils/date-utils";
 import type { JourneyTypeSelect } from "@/server/db/schema";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
-
-// Helper function for formatting dates
-const formatUTCForDisplay = (date: Date | string | null, formatString = "PPP"): string => {
-  if (!date) return "N/A";
-  const dateObj = typeof date === "string" ? new Date(date) : date;
-  return format(dateObj, formatString);
-};
 
 interface ActivityClientProps {
   journeyId: string;
@@ -49,21 +41,12 @@ function ActivityFormSection({
   journey: JourneyTypeSelect;
 }) {
   // Use nuqs for URL query parameters
-  const [dayParam] = useQueryState("day", parseAsString);
   const [dateParam] = useQueryState("date", parseAsString);
 
   // Default date is either from URL params, or current date
   const defaultDate = dateParam ? parseISO(dateParam) : new Date();
 
-  // Default day number is either from URL params, or calculated from the date
-  const defaultDayNumber = dayParam
-    ? Number.parseInt(dayParam, 10)
-    : journey?.startDate
-      ? (calculateDayNumber(
-          defaultDate.toISOString().split("T")[0] || "",
-          String(journey.startDate)
-        ) ?? undefined)
-      : undefined;
+  // We no longer need to calculate day number as it's derived from the date
 
   if (isNewActivity) {
     return (
@@ -71,9 +54,7 @@ function ActivityFormSection({
         onSubmit={onSubmit}
         defaultValues={{
           activityDate: defaultDate,
-          dayNumber: defaultDayNumber,
-          // Default order within day to 1 (first in the day)
-          orderWithinDay: 1,
+          // orderWithinDay removed - will be calculated based on startTime and endTime from GPX file
         }}
         journey={journey}
       />
@@ -96,8 +77,8 @@ function ActivityFormSection({
     activityDate: activityData.activityDate as Date,
     activityType: activityData.activityType as string | undefined,
     content: activityData.content as string | undefined,
-    dayNumber: activityData.dayNumber as number | undefined,
-    orderWithinDay: activityData.orderWithinDay as number | undefined,
+    startTime: activityData.startTime as Date | undefined,
+    endTime: activityData.endTime as Date | undefined,
   };
 
   return (
@@ -108,8 +89,8 @@ function ActivityFormSection({
         activityDate: typedActivityData.activityDate,
         activityType: typedActivityData.activityType,
         content: typedActivityData.content,
-        dayNumber: typedActivityData.dayNumber,
-        orderWithinDay: typedActivityData.orderWithinDay,
+        startTime: typedActivityData.startTime,
+        endTime: typedActivityData.endTime,
       }}
       journey={journey}
     />
@@ -129,10 +110,8 @@ export function ActivityClient({
   const startDate = journey.startDate ? new Date(journey.startDate) : null;
   const endDate = journey.endDate ? new Date(journey.endDate) : null;
 
-  const dateRangeText =
-    startDate && endDate
-      ? `${formatUTCForDisplay(startDate, "MMM d")} - ${formatUTCForDisplay(endDate, "MMM d, yyyy")}`
-      : "No dates set";
+  // Use the new date range formatter
+  const dateRangeText = startDate && endDate ? formatDateRange(startDate, endDate) : "No dates set";
 
   // Fetch activity data if editing an existing activity
   const { data: activityData, isLoading: isLoadingActivity } = useGetActivityByUniqueId(
@@ -164,23 +143,12 @@ export function ActivityClient({
 
   // Event handlers
   const handleSubmit = (data: ActivityCreationFormValues) => {
-    // Format the activity date consistently
-    const formattedDate = formatToISOStringDate(data.activityDate);
-
     // Validate that the activity date is within the journey date range
     if (journey.startDate && journey.endDate) {
-      const activityDate = new Date(formattedDate);
-      const journeyStartDate = new Date(journey.startDate);
-      const journeyEndDate = new Date(journey.endDate);
-
-      // Set time to 00:00:00 for all dates to compare only the date part
-      activityDate.setHours(0, 0, 0, 0);
-      journeyStartDate.setHours(0, 0, 0, 0);
-      journeyEndDate.setHours(0, 0, 0, 0);
-
-      if (activityDate < journeyStartDate || activityDate > journeyEndDate) {
+      // Use the new date range validation function
+      if (!isDateWithinRange(data.activityDate, journey.startDate, journey.endDate)) {
         toast.error(
-          `Activity date must be between ${formatUTCForDisplay(journeyStartDate, "MMM d, yyyy")} and ${formatUTCForDisplay(journeyEndDate, "MMM d, yyyy")}`
+          `Activity date must be between ${formatDateForDisplay(journey.startDate)} and ${formatDateForDisplay(journey.endDate)}`
         );
         return;
       }
@@ -190,13 +158,15 @@ export function ActivityClient({
       const formattedData = {
         ...data,
         journeyId,
-        activityDate: formattedDate,
+        // Pass the Date object directly - the API will handle conversion
+        activityDate: data.activityDate,
       };
       createActivity.mutate(formattedData);
     } else if (activityData) {
       const formattedData = {
         ...data,
-        activityDate: formattedDate,
+        // Pass the Date object directly - the API will handle conversion
+        activityDate: data.activityDate,
       };
       updateActivity.mutate({ id: activityData.id, data: formattedData });
     }

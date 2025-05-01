@@ -1,4 +1,13 @@
-import { index, integer, pgTable, real, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  date,
+  index,
+  integer,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { activityTypeEnum } from "./enum";
 import { journeys } from "./journey-schema";
@@ -15,8 +24,8 @@ export const activities = pgTable(
       .references(() => journeys.id, { onDelete: "cascade" }),
     activityUniqueId: text("activity_unique_id").notNull().unique(),
     title: text("title").notNull(),
-    activityDate: text("start_date").notNull(),
-    dayNumber: integer("day_number"),
+    activityDate: date("activity_date").notNull(), // Changed from timestamp to date
+    dayNumber: integer("day_number"), // Added explicit day number field
     orderWithinDay: integer("order_within_day").default(0).notNull(),
     activityType: activityTypeEnum("activity_type"),
     content: text("content"),
@@ -35,13 +44,19 @@ export const activities = pgTable(
   (table) => [
     uniqueIndex("activities_unique_id_idx").on(table.activityUniqueId),
     index("activities_date_idx").on(table.activityDate),
-    index("activities_order_idx").on(table.journeyId, table.activityDate, table.orderWithinDay),
+    index("activities_day_number_idx").on(table.dayNumber), // Added index for day number
+    index("activities_order_idx").on(table.journeyId, table.dayNumber, table.orderWithinDay), // Updated to use dayNumber
     index("activities_type_idx").on(table.activityType),
     index("activities_journey_date_order_idx").on(
       table.journeyId,
       table.activityDate,
       table.orderWithinDay
     ),
+    index("activities_journey_day_order_idx").on(
+      table.journeyId,
+      table.dayNumber,
+      table.orderWithinDay
+    ), // Added index for journey+day+order
     index("activities_journey_type_idx").on(table.journeyId, table.activityType),
   ]
 );

@@ -1,3 +1,4 @@
+import { formatDateOnly, isDateWithinRange, prepareDayNumber } from "@/lib/utils/date-utils";
 import { generateActivityUniqueId } from "@/lib/utils/slug";
 import { db } from "@/server/db";
 import type { ActivityTypeInsert, UserTypeSelect } from "@/server/db/schema";
@@ -39,15 +40,25 @@ export const createActivity = async (
     };
   }
 
+  // Validate that the activity date is within the journey date range
+  if (!isDateWithinRange(body.activityDate, journey.startDate, journey.endDate)) {
+    return {
+      success: false,
+      message: "Invalid activity date",
+      error: "Activity date must be within the journey date range",
+      statusCode: ApiStatusCode.BAD_REQUEST,
+    };
+  }
+
   // Generate a unique ID for the activity
   const activityUniqueId = generateActivityUniqueId(body.title);
 
-  // Check if there's already an activity with the same day number and order
-  if (body.dayNumber && body.orderWithinDay) {
+  // Check if there's already an activity with the same date and order
+  if (body.activityDate && body.orderWithinDay) {
     const existingActivity = await db.query.activities.findFirst({
       where: and(
         eq(activities.journeyId, journey.id),
-        eq(activities.dayNumber, body.dayNumber),
+        eq(activities.activityDate, body.activityDate),
         eq(activities.orderWithinDay, body.orderWithinDay)
       ),
     });
@@ -56,17 +67,23 @@ export const createActivity = async (
       return {
         success: false,
         message: "Activity order conflict",
-        error: `An activity with order ${body.orderWithinDay} already exists for day ${body.dayNumber}. Please choose a different order.`,
+        error: `An activity with order ${body.orderWithinDay} already exists for the selected date. Please choose a different order.`,
         statusCode: ApiStatusCode.BAD_REQUEST,
       };
     }
   }
+
+  // Calculate the day number based on the activity date and journey start date
+  const dayNumber = prepareDayNumber(body.activityDate, journey.startDate);
 
   // Create the activity with the generated values and the actual journey ID
   const newActivity: ActivityTypeInsert = {
     ...body,
     journeyId: journey.id, // Use the actual journey ID from the database
     activityUniqueId,
+    dayNumber, // Set the calculated day number
+    // Convert to date-only format (without time component)
+    activityDate: body.activityDate,
   };
 
   // Insert the activity into the database
@@ -116,6 +133,7 @@ export const getActivities = async (params: {
   search?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  date?: string; // Optional date filter
 }) => {
   const {
     limit,
@@ -125,6 +143,7 @@ export const getActivities = async (params: {
     search,
     sortBy = "activityDate",
     sortOrder = "asc",
+    date,
   } = params;
 
   // Calculate offset for pagination
@@ -169,6 +188,21 @@ export const getActivities = async (params: {
     whereClause = whereClause ? and(whereClause, searchCondition) : searchCondition;
   }
 
+  // Add date filter if provided
+  if (date) {
+    try {
+      // For date-only fields, we can directly compare with the date string
+      // Format the date as YYYY-MM-DD for comparison
+      const formattedDate = formatDateOnly(new Date(date));
+
+      const dateCondition = eq(activities.activityDate, formattedDate);
+
+      whereClause = whereClause ? and(whereClause, dateCondition) : dateCondition;
+    } catch (error) {
+      console.error("Error parsing date filter:", error);
+    }
+  }
+
   // Determine the field to sort by
   const orderByField = (() => {
     switch (sortBy) {
@@ -178,8 +212,11 @@ export const getActivities = async (params: {
         return activities.activityType;
       case "createdAt":
         return activities.createdAt;
+      case "dayNumber":
+        return activities.dayNumber;
       default:
-        return activities.activityDate;
+        // Default to dayNumber if available, otherwise activityDate
+        return activities.dayNumber || activities.activityDate;
     }
   })();
 
@@ -198,7 +235,12 @@ export const getActivities = async (params: {
   // Get activities with pagination and sorting
   const activityList = await db.query.activities.findMany({
     where: whereClause,
-    orderBy: [orderByDirection],
+    orderBy: [
+      // First order by day number or activity date
+      orderByDirection,
+      // Then by start time within the same day
+      asc(activities.startTime),
+    ],
     limit,
     offset,
     with: {
@@ -207,6 +249,7 @@ export const getActivities = async (params: {
           id: true,
           title: true,
           journeyUniqueId: true,
+          startDate: true, // Include start date for day number calculation if needed
         },
       },
     },
@@ -238,6 +281,7 @@ export const getActivitiesByJourneyId = async (
     search?: string;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
+    date?: string;
   }
 ) => {
   // First check if the journeyId is a unique ID or a database ID
@@ -360,12 +404,31 @@ export const updateActivity = async (
     };
   }
 
+  // Validate that the activity date is within the journey date range if it's being updated
+  if (
+    updateData.activityDate &&
+    !isDateWithinRange(
+      updateData.activityDate,
+      activity.journey.startDate,
+      activity.journey.endDate
+    )
+  ) {
+    return {
+      success: false,
+      message: "Invalid activity date",
+      error: "Activity date must be within the journey date range",
+      statusCode: ApiStatusCode.BAD_REQUEST,
+    };
+  }
+
+  // No need to format the date - it will be properly stored in the database
+
   // Check if we're updating the order and if there's a conflict
-  if (updateData.dayNumber && updateData.orderWithinDay) {
+  if (updateData.activityDate && updateData.orderWithinDay) {
     const existingActivity = await db.query.activities.findFirst({
       where: and(
         eq(activities.journeyId, activity.journeyId),
-        eq(activities.dayNumber, updateData.dayNumber),
+        eq(activities.activityDate, updateData.activityDate),
         eq(activities.orderWithinDay, updateData.orderWithinDay),
         sql`${activities.id} != ${id}` // Exclude the current activity
       ),
@@ -375,17 +438,36 @@ export const updateActivity = async (
       return {
         success: false,
         message: "Activity order conflict",
-        error: `An activity with order ${updateData.orderWithinDay} already exists for day ${updateData.dayNumber}. Please choose a different order.`,
+        error: `An activity with order ${updateData.orderWithinDay} already exists for the selected date. Please choose a different order.`,
         statusCode: ApiStatusCode.BAD_REQUEST,
       };
     }
   }
 
-  // Update activity with the updatedAt timestamp
+  // Calculate day number if activity date is being updated
+  let dayNumber = updateData.dayNumber;
+  if (updateData.activityDate && !updateData.dayNumber) {
+    // Fetch journey start date if not already available
+    if (!activity.journey.startDate) {
+      const journeyData = await db.query.journeys.findFirst({
+        where: eq(journeys.id, activity.journeyId),
+        columns: { startDate: true },
+      });
+
+      if (journeyData) {
+        dayNumber = prepareDayNumber(updateData.activityDate, journeyData.startDate);
+      }
+    } else {
+      dayNumber = prepareDayNumber(updateData.activityDate, activity.journey.startDate);
+    }
+  }
+
+  // Update activity with the updatedAt timestamp and calculated day number
   const result = await db
     .update(activities)
     .set({
       ...updateData,
+      dayNumber,
       updatedAt: new Date(),
     })
     .where(eq(activities.id, id))

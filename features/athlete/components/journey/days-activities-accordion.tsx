@@ -11,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetActivitiesByJourneyId } from "@/features/athlete/hooks";
 import { cn } from "@/lib/utils";
-import { calculateDayNumber } from "@/lib/utils/date-helpers";
+import {
+  calculateDayNumber,
+  generateDayLabels,
+  sortActivitiesByDateAndTime,
+} from "@/lib/utils/date-utils";
 import type { ActivityTypeSelect } from "@/server/db/schema";
 import type { ActivityType } from "@/types/enums";
-import { format, isValid, parseISO } from "date-fns";
 import {
   CalendarDaysIcon,
   ChevronDownIcon,
@@ -464,41 +467,21 @@ const DaysActivitiesAccordion = ({
   // Fetch activities for this journey
   const { data, isLoading, error } = useGetActivitiesByJourneyId(journeyId, {
     limit: 100, // Get all activities
-    sortBy: "activityDate", // Sort by date
+    sortBy: "dayNumber", // Sort by day number (falls back to activityDate if not available)
     sortOrder: "asc", // Ascending order
   });
 
-  // Helper function to calculate day number
-  const calculateDayNumberFromDate = useCallback(
-    (activityDate: string): number => {
-      try {
-        // Use the utility function from date-helpers.ts
-        const dayNum = calculateDayNumber(activityDate, startDate);
-        if (dayNum !== null) {
-          return dayNum;
-        }
-
-        // Fallback calculation if the utility function fails
-        const actDateStr = activityDate.split("T")[0] || activityDate;
-        const startDateStr = startDate.split("T")[0] || startDate;
-
-        const actDate = new Date(actDateStr);
-        const journeyStartDate = new Date(startDateStr);
-
-        // Set time to midnight to ensure we're only comparing dates
-        actDate.setHours(0, 0, 0, 0);
-        journeyStartDate.setHours(0, 0, 0, 0);
-
-        // Calculate the difference in days
-        const diffTime = actDate.getTime() - journeyStartDate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        // Day number is 1-based (first day is day 1)
-        return diffDays + 1;
-      } catch (e) {
-        console.error("Error calculating day number:", e);
-        return 1; // Default to day 1 if calculation fails
+  // Helper function to get day number from activity
+  const getDayNumber = useCallback(
+    (activity: ActivityTypeSelect): number => {
+      // If activity has a dayNumber field, use it
+      if (activity.dayNumber !== null && activity.dayNumber !== undefined) {
+        return activity.dayNumber;
       }
+
+      // Otherwise calculate it from the activity date
+      const dayNum = calculateDayNumber(activity.activityDate, startDate);
+      return dayNum !== null ? dayNum : 1; // Default to day 1 if calculation fails
     },
     [startDate]
   );
@@ -514,8 +497,8 @@ const DaysActivitiesAccordion = ({
 
     // Process each activity
     for (const activity of data.activities) {
-      // Get or calculate day number
-      const dayNum = activity.dayNumber || calculateDayNumberFromDate(activity.activityDate);
+      // Get day number from activity (use stored dayNumber field if available)
+      const dayNum = activity.dayNumber || getDayNumber(activity);
 
       // Initialize array if needed
       if (!grouped[dayNum]) {
@@ -526,45 +509,19 @@ const DaysActivitiesAccordion = ({
       grouped[dayNum]?.push(activity);
     }
 
-    // Sort activities within each day
+    // Sort activities within each day based on startTime
     for (const day of Object.keys(grouped)) {
       const dayNum = Number.parseInt(day);
-      grouped[dayNum]?.sort((a, b) => (a.orderWithinDay || 0) - (b.orderWithinDay || 0));
+      // Use the sortActivitiesByDateAndTime utility function
+      grouped[dayNum] = sortActivitiesByDateAndTime(grouped[dayNum] || []);
     }
 
     return grouped;
-  }, [data, calculateDayNumberFromDate]);
+  }, [data, getDayNumber]);
 
   // Generate day labels based on journey start/end dates
   const dayLabels = useMemo(() => {
-    const labels: { dayNumber: number; date: string; formattedDate: string }[] = [];
-
-    try {
-      const start = parseISO(startDate);
-      const end = parseISO(endDate);
-
-      if (!isValid(start) || !isValid(end)) {
-        return labels;
-      }
-
-      // Calculate the number of days in the journey
-      const dayCount = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-      for (let i = 0; i < dayCount; i++) {
-        const currentDate = new Date(start);
-        currentDate.setDate(start.getDate() + i);
-
-        labels.push({
-          dayNumber: i + 1,
-          date: format(currentDate, "yyyy-MM-dd"),
-          formattedDate: format(currentDate, "EEE, MMM d, yyyy"),
-        });
-      }
-    } catch (e) {
-      console.error("Error generating day labels:", e);
-    }
-
-    return labels;
+    return generateDayLabels(startDate, endDate);
   }, [startDate, endDate]);
 
   // Get days that have activities

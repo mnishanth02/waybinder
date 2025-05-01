@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { date, index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { users } from "./auth-schema";
 import { journeyTypeEnum, privacyStatusEnum } from "./enum";
@@ -16,8 +16,8 @@ export const journeys = pgTable(
     title: text("title").unique().notNull(),
     slug: text("slug").unique().notNull(),
     description: text("description"),
-    startDate: text("start_date").notNull(),
-    endDate: text("end_date").notNull(),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
     journeyType: journeyTypeEnum("journey_type").notNull(),
     tags: text("tags").array(),
     privacyStatus: privacyStatusEnum("privacy_status").default("private").notNull(),

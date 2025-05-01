@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { calculateDaysBetween, formatDateForDisplay } from "@/lib/utils/date-utils";
 import { CalendarIcon, Eye, MountainIcon, PlusIcon } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
@@ -38,23 +39,14 @@ const JourneyList: React.FC<JourneyListProps> = ({ onViewJourney, onAddActivity 
       return journeyStartDate >= twelveMonthsAgo;
     }) || [];
 
-  // Format date to display in a readable format
+  // Format date to display in a readable format using our date utility
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return formatDateForDisplay(dateString, "MMM d, yyyy");
   };
 
-  // Calculate number of days between start and end dates
+  // Calculate number of days between start and end dates using our date utility
   const calculateDays = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1; // Include both start and end dates
+    return calculateDaysBetween(startDate, endDate);
   };
 
   // Get initials from a name

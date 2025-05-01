@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useJourneySheetStore } from "@/features/athlete/store/use-journey-sheet-store";
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/utils/date";
+import { formatDate } from "@/lib/utils/date-utils";
 import type { JourneyTypeSelect } from "@/server/db/schema";
 import { CalendarIcon, Edit, MapPinIcon, Trash2 } from "lucide-react";
 import Image from "next/image";

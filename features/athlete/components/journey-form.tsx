@@ -145,7 +145,8 @@ export function JourneyForm({
 
   // Form submission handler
   const handleSubmit = (data: JourneyCreationFormValues) => {
-    // Format dates if needed (no need to check instanceof Date as they're already strings)
+    // Pass the data directly to the parent component
+    // The parent component will handle date formatting
     onSubmit(data);
   };
 
