@@ -3,7 +3,6 @@ import { handle } from "hono/vercel";
 import app from "@/server";
 import activityRouter from "@/server/routes/activity/activity.route";
 import athleteRouter from "@/server/routes/athlete/athlete.route";
-import gpsRouter from "@/server/routes/gps/gps.route";
 import journeyRouter from "@/server/routes/journey/journey.route";
 import userRouter from "@/server/routes/user/user.route";
 
@@ -13,8 +12,7 @@ const routes = app
   .route("/user", userRouter)
   .route("/athlete", athleteRouter)
   .route("/journey", journeyRouter)
-  .route("/activity", activityRouter)
-  .route("/gps", gpsRouter);
+  .route("/activity", activityRouter);
 
 //
 
