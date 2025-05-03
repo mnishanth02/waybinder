@@ -35,8 +35,6 @@ export const useJourneySheetStore = create<JourneySheetState>((set, get) => ({
   journeyId: null,
   isNewJourney: false,
   mode: "view",
-
-  // Initialize setters as null - they will be set by the component using nuqs
   setJourneyIdParam: null,
   setModeParam: null,
 

@@ -3,21 +3,26 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { ActivityCreationFormValues } from "@/features/athlete/athlete-validator";
 import { ActivityForm } from "@/features/athlete/components/activity/activity-form-enhanced";
 import {
   useCreateActivity,
   useGetActivityByUniqueId,
   useUpdateActivity,
 } from "@/features/athlete/hooks/use-activity-queries";
-import { formatDateForDisplay, formatDateRange, isDateWithinRange } from "@/lib/utils/date-utils";
-import type { JourneyTypeSelect } from "@/server/db/schema";
+import {
+  formatDateForDisplay,
+  formatDateOnly,
+  formatDateRange,
+  isDateWithinRange,
+} from "@/lib/utils/date-utils";
+import type { ActivityTypeSelect, JourneyTypeSelect } from "@/server/db/schema";
 import { parseISO } from "date-fns";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { ActivitySchemaValues } from "../../athlete-validator";
 
 interface ActivityClientProps {
   journeyId: string;
@@ -35,9 +40,9 @@ function ActivityFormSection({
   journey,
 }: {
   isNewActivity: boolean;
-  activityData: Record<string, unknown> | null;
+  activityData: ActivityTypeSelect | null;
   isLoadingActivity: boolean;
-  onSubmit: (data: ActivityCreationFormValues) => void;
+  onSubmit: (data: ActivitySchemaValues) => void;
   journey: JourneyTypeSelect;
 }) {
   // Use nuqs for URL query parameters
@@ -69,28 +74,14 @@ function ActivityFormSection({
     return <div className="py-8 text-center">Activity not found</div>;
   }
 
-  // Create a properly typed version of the activity data
-  // This ensures we only access properties that exist on the ActivityTypeSelect type
-  const typedActivityData = {
-    title: activityData.title as string,
-    journeyId: activityData.journeyId as string,
-    activityDate: activityData.activityDate as Date,
-    activityType: activityData.activityType as string | undefined,
-    content: activityData.content as string | undefined,
-    startTime: activityData.startTime as Date | undefined,
-    endTime: activityData.endTime as Date | undefined,
-  };
-
   return (
     <ActivityForm
       onSubmit={onSubmit}
       defaultValues={{
-        title: typedActivityData.title,
-        activityDate: typedActivityData.activityDate,
-        activityType: typedActivityData.activityType,
-        content: typedActivityData.content,
-        startTime: typedActivityData.startTime,
-        endTime: typedActivityData.endTime,
+        title: activityData.title,
+        activityDate: new Date(activityData.activityDate),
+        activityType: activityData.activityType,
+        content: activityData.content || "",
       }}
       journey={journey}
     />
@@ -142,7 +133,7 @@ export function ActivityClient({
   const isSubmitting = createActivity.isPending || updateActivity.isPending;
 
   // Event handlers
-  const handleSubmit = (data: ActivityCreationFormValues) => {
+  const handleSubmit = (data: ActivitySchemaValues) => {
     // Validate that the activity date is within the journey date range
     if (journey.startDate && journey.endDate) {
       // Use the new date range validation function
@@ -158,15 +149,13 @@ export function ActivityClient({
       const formattedData = {
         ...data,
         journeyId,
-        // Pass the Date object directly - the API will handle conversion
-        activityDate: data.activityDate,
+        activityDate: formatDateOnly(data.activityDate),
       };
       createActivity.mutate(formattedData);
     } else if (activityData) {
       const formattedData = {
         ...data,
-        // Pass the Date object directly - the API will handle conversion
-        activityDate: data.activityDate,
+        activityDate: formatDateOnly(data.activityDate),
       };
       updateActivity.mutate({ id: activityData.id, data: formattedData });
     }

@@ -34,41 +34,18 @@ export const journeySchema = z
 
 export type JourneyCreationFormValues = z.infer<typeof journeySchema>;
 
-export const activitySchema = z
-  .object({
-    title: z.string().min(3, { message: "Title must be at least 3 characters" }),
-    activityDate: z
-      .date({ invalid_type_error: "Invalid date format" })
-      .refine((date) => date instanceof Date && !Number.isNaN(date.getTime()), {
-        message: "Please select a valid date",
-      }),
-    // Activity date will be used to determine the day number for display
-    // orderWithinDay removed - will be calculated based on startTime and endTime from GPX file
-    activityType: createEnumSchema(ACTIVITY_TYPES, "Please select an activity type").default(
-      "other"
-    ),
-    content: z.string().optional(),
-    startTime: z
-      .date({ invalid_type_error: "Invalid start time format" })
-      .optional()
-      .refine((date) => !date || (date instanceof Date && !Number.isNaN(date.getTime())), {
-        message: "Please select a valid start time",
-      }),
-    endTime: z
-      .date({ invalid_type_error: "Invalid end time format" })
-      .optional()
-      .refine((date) => !date || (date instanceof Date && !Number.isNaN(date.getTime())), {
-        message: "Please select a valid end time",
-      }),
-  })
-  // Add validation for start time before end time if both are provided
-  .refine((data) => !data.startTime || !data.endTime || data.startTime <= data.endTime, {
-    message: "Start time must be before end time",
-    path: ["endTime"],
-  });
+export const activitySchema = z.object({
+  title: z.string().min(3, { message: "Title must be at least 3 characters" }),
+  activityDate: z
+    .date({ invalid_type_error: "Invalid date format" })
+    .refine((date) => date instanceof Date && !Number.isNaN(date.getTime()), {
+      message: "Please select a valid date",
+    }),
+  // Activity date will be used to determine the day number for display
+  // orderWithinDay removed - will be calculated based on startTime and endTime from GPX file
+  activityType: createEnumSchema(ACTIVITY_TYPES, "Please select an activity type").default("other"),
+  content: z.string().optional(),
+});
 
 // Base form values from the schema
 export type ActivitySchemaValues = z.infer<typeof activitySchema>;
-
-// Use the same type for form values
-export type ActivityCreationFormValues = ActivitySchemaValues;

@@ -58,8 +58,6 @@ const JourneySheet = (props: JourneySheetProps = {}) => {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // URL state for mode
-
   // Fetch users when the sheet is opened
   const { data: userData, isLoading: isLoadingUsers } = useGetUsers();
 

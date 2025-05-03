@@ -14,33 +14,24 @@ import { ACTIVITY_TYPES, createSelectOptions } from "@/types/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FileUp, Upload, X } from "lucide-react";
 import Image from "next/image";
-import React, { useCallback, useEffect, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import {
-  type ActivityCreationFormValues,
-  type ActivitySchemaValues,
-  activitySchema,
-} from "../../athlete-validator";
+import { type ActivitySchemaValues, activitySchema } from "../../athlete-validator";
 
 // Create select options for activity types
 const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
 
 // Define a form values type that matches ActivitySchemaValues
-type ActivityFormValues = ActivitySchemaValues;
 
 interface ActivityFormProps {
-  onSubmit: (data: ActivityCreationFormValues) => void;
-  defaultValues?: Partial<ActivityCreationFormValues>;
+  onSubmit: (data: ActivitySchemaValues) => void;
+  defaultValues?: Partial<ActivitySchemaValues>;
   isSubmitting?: boolean; // Kept for API compatibility but not used internally
   journey?: JourneyTypeSelect;
 }
 
-export function ActivityForm({
-  onSubmit,
-  defaultValues,
-  // isSubmitting is not used internally but kept for API compatibility
-  journey,
-}: ActivityFormProps) {
+export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormProps) {
   // State for file uploads
   const [gpxFile, setGpxFile] = useState<File | null>(null);
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
@@ -56,44 +47,24 @@ export function ActivityForm({
     pace: "-",
   });
 
-  // Create a properly structured defaultValues object
-  const formDefaultValues = React.useMemo(() => {
-    // Base default values
-    const baseDefaults: ActivityFormValues = {
-      title: "",
-      activityDate: new Date(),
-      activityType: "other",
-      content: "",
-      startTime: undefined,
-      endTime: undefined,
-    };
-
-    // If we have defaultValues from props, merge them
-    if (defaultValues) {
-      return {
-        ...baseDefaults,
-        ...defaultValues,
-      };
-    }
-
-    return baseDefaults;
-  }, [defaultValues]);
-
   // Define the form with proper typing
-  const form = useForm<ActivityFormValues>({
-    // Cast the resolver to the correct type
+  const form = useForm<ActivitySchemaValues>({
     resolver: zodResolver(activitySchema),
-    defaultValues: formDefaultValues,
-    mode: "onBlur", // Validate on blur for better UX
+    defaultValues: defaultValues
+      ? defaultValues
+      : {
+          title: "",
+          activityDate: new Date(),
+          activityType: "other",
+          content: "",
+        },
+    mode: "onBlur",
   });
 
   const {
     formState: { errors },
   } = form;
 
-  // We no longer need to watch for activity date changes or use setValue
-
-  // Monitor form errors silently in development
   useEffect(() => {
     if (process.env.NODE_ENV === "development" && Object.keys(errors).length > 0) {
       // Silent in production, log only in development
@@ -167,15 +138,11 @@ export function ActivityForm({
   }, [photosPreviews]);
 
   const handleSubmit = useCallback(
-    (values: Record<string, unknown>) => {
+    (values: ActivitySchemaValues) => {
       // Convert form values to the expected format
-      const formattedValues: ActivityCreationFormValues = {
-        title: values.title as string,
-        activityDate: values.activityDate as Date,
-        activityType: values.activityType as string,
-        content: values.content as string | undefined,
-        startTime: values.startTime as Date | undefined,
-        endTime: values.endTime as Date | undefined,
+      const formattedValues: ActivitySchemaValues = {
+        ...values,
+        activityDate: values.activityDate,
       };
 
       // Here we would handle file uploads and then submit the form
