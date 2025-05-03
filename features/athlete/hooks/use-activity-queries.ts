@@ -22,23 +22,7 @@ export const useCreateActivity = (options?: { onSuccess?: () => void }) => {
 
   return useMutation({
     mutationFn: async (data: CreateActivityType) => {
-      // Only include necessary fields to ensure proper types
-      const apiData: CreateActivityType = {
-        journeyId: data.journeyId,
-        title: data.title,
-        activityDate: data.activityDate,
-        activityType: data.activityType,
-        content: data.content,
-        orderWithinDay: data.orderWithinDay,
-        distanceKm: data.distanceKm,
-        elevationGainM: data.elevationGainM,
-        elevationLossM: data.elevationLossM,
-        movingTimeSeconds: data.movingTimeSeconds,
-        startTime: data.startTime,
-        endTime: data.endTime,
-      };
-
-      return createActivity(apiData);
+      return createActivity(data);
     },
     onSuccess: (data) => {
       // Invalidate relevant queries
@@ -75,25 +59,9 @@ export const useUpdateActivity = (options?: { onSuccess?: () => void }) => {
       data,
     }: {
       id: string;
-      data: Partial<UpdateActivityType>;
+      data: UpdateActivityType;
     }) => {
-      // Only include fields that are allowed to be updated
-      // Explicitly omit journeyId as it's not allowed in updates
-      const apiData = {
-        title: data.title,
-        activityDate: data.activityDate,
-        activityType: data.activityType,
-        content: data.content,
-        orderWithinDay: data.orderWithinDay,
-        distanceKm: data.distanceKm,
-        elevationGainM: data.elevationGainM,
-        elevationLossM: data.elevationLossM,
-        movingTimeSeconds: data.movingTimeSeconds,
-        startTime: data.startTime,
-        endTime: data.endTime,
-      };
-
-      return updateActivity(id, apiData);
+      return updateActivity(id, data);
     },
     onSuccess: (data) => {
       // Invalidate relevant queries

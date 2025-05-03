@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FileUp, Upload, X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { type ActivitySchemaValues, activitySchema } from "../../athlete-validator";
 
@@ -137,20 +137,9 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
     };
   }, [photosPreviews]);
 
-  const handleSubmit = useCallback(
-    (values: ActivitySchemaValues) => {
-      // Convert form values to the expected format
-      const formattedValues: ActivitySchemaValues = {
-        ...values,
-        activityDate: values.activityDate,
-      };
-
-      // Here we would handle file uploads and then submit the form
-      // For now, just pass the values to the parent component
-      onSubmit(formattedValues);
-    },
-    [onSubmit]
-  );
+  const handleSubmit = (values: ActivitySchemaValues) => {
+    onSubmit(values);
+  };
 
   return (
     <Form {...form}>

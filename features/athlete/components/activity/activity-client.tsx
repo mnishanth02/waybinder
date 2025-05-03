@@ -16,16 +16,13 @@ import {
   isDateWithinRange,
 } from "@/lib/utils/date-utils";
 import type { ActivityTypeSelect, JourneyTypeSelect } from "@/server/db/schema";
-import { parseISO } from "date-fns";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { parseAsString, useQueryState } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ActivitySchemaValues } from "../../athlete-validator";
 
 interface ActivityClientProps {
-  journeyId: string;
   activityId: string;
   journey: JourneyTypeSelect;
   isNewActivity: boolean;
@@ -46,20 +43,18 @@ function ActivityFormSection({
   journey: JourneyTypeSelect;
 }) {
   // Use nuqs for URL query parameters
-  const [dateParam] = useQueryState("date", parseAsString);
 
   // Default date is either from URL params, or current date
-  const defaultDate = dateParam ? parseISO(dateParam) : new Date();
-
-  // We no longer need to calculate day number as it's derived from the date
 
   if (isNewActivity) {
     return (
       <ActivityForm
         onSubmit={onSubmit}
         defaultValues={{
-          activityDate: defaultDate,
-          // orderWithinDay removed - will be calculated based on startTime and endTime from GPX file
+          activityDate: new Date(),
+          activityType: "other",
+          content: "",
+          title: "",
         }}
         journey={journey}
       />
@@ -88,12 +83,7 @@ function ActivityFormSection({
   );
 }
 
-export function ActivityClient({
-  journeyId,
-  activityId,
-  journey,
-  isNewActivity,
-}: ActivityClientProps) {
+export function ActivityClient({ activityId, journey, isNewActivity }: ActivityClientProps) {
   const router = useRouter();
   const [saveAndAddAnother, setSaveAndAddAnother] = useState(false);
 
@@ -118,15 +108,14 @@ export function ActivityClient({
         router.refresh();
       } else {
         // Navigate back to journey page
-        router.push(`/journey/${journeyId}`);
+        router.push(`/journey/${journey.journeyUniqueId}`);
       }
     },
   });
 
   const updateActivity = useUpdateActivity({
     onSuccess: () => {
-      // Navigate back to journey page
-      router.push(`/journey/${journeyId}`);
+      router.push(`/journey/${journey.journeyUniqueId}`);
     },
   });
 
@@ -148,9 +137,10 @@ export function ActivityClient({
     if (isNewActivity) {
       const formattedData = {
         ...data,
-        journeyId,
+        journeyId: journey.journeyUniqueId,
         activityDate: formatDateOnly(data.activityDate),
       };
+
       createActivity.mutate(formattedData);
     } else if (activityData) {
       const formattedData = {
@@ -170,7 +160,7 @@ export function ActivityClient({
   };
 
   const handleCancel = () => {
-    router.push(`/journey/${journeyId}`);
+    router.push(`/journey/${journey.journeyUniqueId}`);
   };
 
   return (
@@ -183,7 +173,7 @@ export function ActivityClient({
               variant="ghost"
               size="icon"
               onClick={handleCancel}
-              className="h-9 w-9 rounded-full"
+              className="h-9 w-9 cursor-pointer rounded-full"
               aria-label="Go back"
             >
               <ArrowLeft className="h-4 w-4" />
