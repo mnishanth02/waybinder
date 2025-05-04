@@ -22,6 +22,8 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.802.0",
+    "@aws-sdk/s3-request-presigner": "^3.802.0",
     "@hono/zod-openapi": "^0.19.6",
     "@hono/zod-validator": "^0.4.3",
     "@hookform/resolvers": "^5.0.1",
