@@ -29,7 +29,6 @@ export const activities = pgTable(
     orderWithinDay: integer("order_within_day").default(0).notNull(),
     activityType: activityTypeEnum("activity_type"),
     content: text("content"),
-    gpxFileUrl: text("gpx_file_url"),
     distanceKm: real("distance_km"),
     elevationGainM: real("elevation_gain_m"),
     elevationLossM: real("elevation_loss_m"),
