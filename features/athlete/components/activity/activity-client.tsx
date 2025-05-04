@@ -1,11 +1,21 @@
 "use client";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ActivityForm } from "@/features/athlete/components/activity/activity-form-enhanced";
 import {
   useCreateActivity,
+  useDeleteActivity,
   useGetActivityByUniqueId,
   useUpdateActivity,
 } from "@/features/athlete/hooks/use-activity-queries";
@@ -16,7 +26,7 @@ import {
   isDateWithinRange,
 } from "@/lib/utils/date-utils";
 import type { ActivityTypeSelect, JourneyTypeSelect } from "@/server/db/schema";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -86,6 +96,7 @@ function ActivityFormSection({
 export function ActivityClient({ activityId, journey, isNewActivity }: ActivityClientProps) {
   const router = useRouter();
   const [saveAndAddAnother, setSaveAndAddAnother] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Format dates for display
   const startDate = journey.startDate ? new Date(journey.startDate) : null;
@@ -115,6 +126,15 @@ export function ActivityClient({ activityId, journey, isNewActivity }: ActivityC
 
   const updateActivity = useUpdateActivity({
     onSuccess: () => {
+      router.push(`/journey/${journey.journeyUniqueId}`);
+    },
+  });
+
+  // Delete activity mutation
+  const { mutate: deleteActivity, isPending: isDeleting } = useDeleteActivity({
+    journeyId: journey.journeyUniqueId,
+    onSuccess: () => {
+      // Navigate back to journey page after deletion
       router.push(`/journey/${journey.journeyUniqueId}`);
     },
   });
@@ -165,6 +185,20 @@ export function ActivityClient({ activityId, journey, isNewActivity }: ActivityC
     router.push(`/journey/${journey.journeyUniqueId}`);
   };
 
+  // Handle delete button click
+  const handleDeleteClick = () => {
+    if (!isNewActivity && activityData) {
+      setIsDeleteDialogOpen(true);
+    }
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = () => {
+    if (!isNewActivity && activityData) {
+      deleteActivity(activityData.id);
+    }
+  };
+
   return (
     <div>
       {/* Sticky header with journey info */}
@@ -198,6 +232,17 @@ export function ActivityClient({ activityId, journey, isNewActivity }: ActivityC
           </div>
 
           <div className="flex w-full gap-2 sm:w-auto">
+            {!isNewActivity && (
+              <Button
+                variant="outline"
+                onClick={handleDeleteClick}
+                className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 sm:flex-none"
+                disabled={isDeleting}
+              >
+                <Trash2 className="mr-1.5 h-4 w-4" />
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            )}
             <Button variant="outline" onClick={handleCancel} className="flex-1 sm:flex-none">
               Cancel
             </Button>
@@ -220,6 +265,28 @@ export function ActivityClient({ activityId, journey, isNewActivity }: ActivityC
           </div>
         </div>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{activityData?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Activity form */}
       <div className=" mx-auto max-w-6xl">

@@ -6,10 +6,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetActivitiesByJourneyId } from "@/features/athlete/hooks";
+import { useDeleteActivity, useGetActivitiesByJourneyId } from "@/features/athlete/hooks";
 import { cn } from "@/lib/utils";
 import {
   calculateDayNumber,
@@ -24,6 +34,7 @@ import {
   ChevronUpIcon,
   PencilIcon,
   PlusIcon,
+  Trash2Icon,
 } from "lucide-react";
 import Link from "next/link";
 import { createContext, memo, useCallback, useContext, useMemo, useState } from "react";
@@ -101,99 +112,150 @@ const formatActivityType = (type: ActivityType | null | undefined) => {
 // Activity component (memoized to prevent unnecessary re-renders)
 const Activity = memo(
   ({ activity, journeyId }: { activity: ActivityTypeSelect; journeyId: string }) => {
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+    // Use the delete activity hook with optimistic updates
+    const { mutate: deleteActivity, isPending } = useDeleteActivity({
+      journeyId, // Pass journeyId to invalidate the specific journey's activities
+      onSuccess: () => {
+        // Dialog will be closed automatically after successful deletion
+      },
+    });
+
+    // Handle delete confirmation
+    const handleDelete = () => {
+      deleteActivity(activity.id);
+    };
+
     return (
-      <div className="rounded-md border bg-card p-4 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
-              <span role="img" aria-label={activity.activityType || "activity"} className="text-xl">
-                {getActivityIcon(activity.activityType)}
-              </span>
-            </div>
-            <div className="flex-1">
-              <h4 className="font-medium text-base">{activity.title}</h4>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
-                <span className="inline-flex items-center rounded-full border border-primary/10 bg-primary/5 px-2.5 py-0.5 font-medium text-xs">
-                  {formatActivityType(activity.activityType)}
+      <>
+        <div className="rounded-md border bg-card p-4 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
+                <span
+                  role="img"
+                  aria-label={activity.activityType || "activity"}
+                  className="text-xl"
+                >
+                  {getActivityIcon(activity.activityType)}
                 </span>
-                {activity.distanceKm && (
-                  <span className="inline-flex items-center gap-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M18 6H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h13l4-3.5L18 6Z" />
-                      <path d="M12 13v8" />
-                      <path d="M12 3v3" />
-                    </svg>
-                    {activity.distanceKm} km
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-base">{activity.title}</h4>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
+                  <span className="inline-flex items-center rounded-full border border-primary/10 bg-primary/5 px-2.5 py-0.5 font-medium text-xs">
+                    {formatActivityType(activity.activityType)}
                   </span>
-                )}
-                {activity.elevationGainM && (
-                  <span className="inline-flex items-center gap-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="m2 22 10-10 2 2 7-7" />
-                      <path d="m16 7 5 0 0 5" />
-                    </svg>
-                    {activity.elevationGainM}m gain
-                  </span>
-                )}
-                {activity.movingTimeSeconds && (
-                  <span className="inline-flex items-center gap-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    {Math.floor(activity.movingTimeSeconds / 60)} min
-                  </span>
-                )}
+                  {activity.distanceKm && (
+                    <span className="inline-flex items-center gap-1">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 6H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h13l4-3.5L18 6Z" />
+                        <path d="M12 13v8" />
+                        <path d="M12 3v3" />
+                      </svg>
+                      {activity.distanceKm} km
+                    </span>
+                  )}
+                  {activity.elevationGainM && (
+                    <span className="inline-flex items-center gap-1">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m2 22 10-10 2 2 7-7" />
+                        <path d="m16 7 5 0 0 5" />
+                      </svg>
+                      {activity.elevationGainM}m gain
+                    </span>
+                  )}
+                  {activity.movingTimeSeconds && (
+                    <span className="inline-flex items-center gap-1">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      {Math.floor(activity.movingTimeSeconds / 60)} min
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 border-destructive/30 px-2 text-destructive hover:bg-destructive/10"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2Icon className="h-3.5 w-3.5" />
+              </Button>
+              <Link
+                href={`/journey/${journeyId}/${activity.activityUniqueId}`}
+                className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-3 py-1 font-medium text-xs shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/10"
+              >
+                <PencilIcon className="mr-1.5 h-3 w-3" />
+                Edit
+              </Link>
+            </div>
           </div>
-          <div>
-            <Link
-              href={`/journey/${journeyId}/${activity.activityUniqueId}`}
-              className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-3 py-1 font-medium text-xs shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/10"
-            >
-              <PencilIcon className="mr-1.5 h-3 w-3" />
-              Edit
-            </Link>
-          </div>
+          {activity.content && (
+            <div className="mt-4 rounded-md border border-border/30 bg-muted/20 p-3 text-muted-foreground text-sm">
+              <div className="mb-1 font-medium text-muted-foreground text-xs">Notes:</div>
+              <div className="whitespace-pre-wrap">{activity.content}</div>
+            </div>
+          )}
         </div>
-        {activity.content && (
-          <div className="mt-4 rounded-md border border-border/30 bg-muted/20 p-3 text-muted-foreground text-sm">
-            <div className="mb-1 font-medium text-muted-foreground text-xs">Notes:</div>
-            <div className="whitespace-pre-wrap">{activity.content}</div>
-          </div>
-        )}
-      </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{activity.title}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isPending}
+              >
+                {isPending ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 );
