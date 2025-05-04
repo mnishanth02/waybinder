@@ -1,0 +1,1 @@
+ALTER TABLE "activities" ADD COLUMN "gpx_file_url" text;
