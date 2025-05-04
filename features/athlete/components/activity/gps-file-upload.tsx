@@ -2,13 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { type UnifiedGPSData, processGPSFile } from "@/lib/utils/gps-data-processor";
 import {
   type ParsedGPSData,
   formatDistance,
   formatDuration,
   formatElevation,
   formatPace,
-  parseGPSFile,
 } from "@/lib/utils/gps-file-parser";
 import { FileUp, Upload, X } from "lucide-react";
 import type React from "react";
@@ -24,7 +24,7 @@ const GPSFileUpload: React.FC<GPSFileUploadProps> = ({ onFileProcessed, classNam
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [parsedData, setParsedData] = useState<ParsedGPSData | null>(null);
+  const [gpsData, setGpsData] = useState<UnifiedGPSData | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -35,13 +35,18 @@ const GPSFileUpload: React.FC<GPSFileUploadProps> = ({ onFileProcessed, classNam
     setError(null);
 
     try {
-      const data = await parseGPSFile(selectedFile);
-      setParsedData(data);
-      onFileProcessed(data);
+      // Process the GPS file to get all data formats
+      const { unifiedData, parsedData } = await processGPSFile(selectedFile);
+
+      // Store the unified data for UI display
+      setGpsData(unifiedData);
+
+      // Pass the parsed data to the parent component
+      onFileProcessed(parsedData);
     } catch (err) {
-      console.error("Error parsing GPS file:", err);
-      setError(err instanceof Error ? err.message : "Error parsing file");
-      setParsedData(null);
+      console.error("Error processing GPS file:", err);
+      setError(err instanceof Error ? err.message : "Error processing file");
+      setGpsData(null);
     } finally {
       setIsProcessing(false);
     }
@@ -49,7 +54,7 @@ const GPSFileUpload: React.FC<GPSFileUploadProps> = ({ onFileProcessed, classNam
 
   const removeFile = () => {
     setFile(null);
-    setParsedData(null);
+    setGpsData(null);
     setError(null);
     // Reset the file input
     const fileInput = document.getElementById("gps-file-upload") as HTMLInputElement;
@@ -111,37 +116,46 @@ const GPSFileUpload: React.FC<GPSFileUploadProps> = ({ onFileProcessed, classNam
           </div>
 
           {/* Map preview */}
-          {parsedData && (
+          {gpsData && (
             <div className="mt-6">
-              <RouteMap geoJSON={parsedData.geoJSON} height="300px" />
+              <RouteMap geoJSON={gpsData.geoJSON} height="300px" />
             </div>
           )}
 
           {/* Activity stats from GPS */}
-          {parsedData && (
-            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {gpsData && (
+            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
               <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
                 <p className="mb-1 font-medium text-muted-foreground text-xs">Distance</p>
                 <p className="font-semibold text-card-foreground">
-                  {formatDistance(parsedData.stats.distance)}
+                  {formatDistance(gpsData.stats.distance)}
                 </p>
               </div>
               <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
                 <p className="mb-1 font-medium text-muted-foreground text-xs">Duration</p>
                 <p className="font-semibold text-card-foreground">
-                  {formatDuration(parsedData.stats.duration)}
+                  {formatDuration(gpsData.stats.duration)}
                 </p>
               </div>
               <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
                 <p className="mb-1 font-medium text-muted-foreground text-xs">Elevation</p>
                 <p className="font-semibold text-card-foreground">
-                  {formatElevation(parsedData.stats.elevation.gain)}
+                  {formatElevation(gpsData.stats.elevation.gain)}
                 </p>
               </div>
               <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
                 <p className="mb-1 font-medium text-muted-foreground text-xs">Pace</p>
                 <p className="font-semibold text-card-foreground">
-                  {formatPace(parsedData.stats.pace)}
+                  {formatPace(gpsData.stats.pace)}
+                </p>
+              </div>
+              <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
+                <p className="mb-1 font-medium text-muted-foreground text-xs">Time</p>
+                <p className="font-semibold text-card-foreground text-xs">
+                  {gpsData.stats.startTime ? gpsData.stats.startTime.toLocaleString() : "N/A"}
+                </p>
+                <p className="font-semibold text-card-foreground text-xs">
+                  {gpsData.stats.endTime ? gpsData.stats.endTime.toLocaleString() : "N/A"}
                 </p>
               </div>
             </div>

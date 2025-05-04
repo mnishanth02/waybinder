@@ -23,8 +23,6 @@ import GPSFileUpload from "./gps-file-upload";
 // Create select options for activity types
 const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
 
-// Define a form values type that matches ActivitySchemaValues
-
 interface ActivityFormProps {
   onSubmit: (data: ActivitySchemaValues) => void;
   defaultValues?: Partial<ActivitySchemaValues>;
@@ -35,6 +33,9 @@ interface ActivityFormProps {
 export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormProps) {
   // State for file uploads
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
+
+  // State for GPS data
+  const [parsedGPSData, setParsedGPSData] = useState<ParsedGPSData | null>(null);
 
   // Define the form with proper typing
   const form = useForm<ActivitySchemaValues>({
@@ -65,14 +66,16 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
   const handleGPSFileProcessed = (data: ParsedGPSData) => {
     console.log("GPS file processed:", data);
 
-    // Here we could set form values based on parsed data:
-    // form.setValue("distanceKm", data.stats.distance / 1000);
-    // form.setValue("elevationGainM", data.stats.elevation.gain);
-    // form.setValue("movingTimeSeconds", data.stats.duration);
+    // Store the parsed GPS data for later use
+    setParsedGPSData(data);
 
-    // If the file contains timestamps, we could also set the activity date:
+    // Set the activity date from the GPS file's start time
+    // If no start time is available, use the current date
     if (data.stats.startTime) {
       form.setValue("activityDate", data.stats.startTime);
+    } else {
+      // If no start time in GPS file, use current date
+      form.setValue("activityDate", new Date());
     }
   };
 
@@ -108,7 +111,27 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
   }, [photosPreviews]);
 
   const handleSubmit = (values: ActivitySchemaValues) => {
-    onSubmit(values);
+    // Create a copy of the form values
+    const formData = { ...values };
+
+    // If we have GPS data, extract the relevant fields
+    if (parsedGPSData) {
+      // Add the GPS data to the form values
+      // These will be passed to the onSubmit handler but are not part of the form itself
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      (formData as any).gpsData = {
+        distanceKm: parsedGPSData.stats.distance / 1000,
+        elevationGainM: parsedGPSData.stats.elevation.gain,
+        elevationLossM: parsedGPSData.stats.elevation.loss,
+        movingTimeSeconds: parsedGPSData.stats.duration,
+        startTime: parsedGPSData.stats.startTime,
+        endTime: parsedGPSData.stats.endTime,
+        geoJSON: parsedGPSData.geoJSON,
+      };
+    }
+
+    // Submit the form data with the GPS data included
+    onSubmit(formData);
   };
 
   return (
@@ -122,10 +145,16 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
               <DatePickerWithLabel
                 nameInSchema={"activityDate"}
                 fieldTitle={"Date & Time"}
-                placeholder={"Select activity date"}
+                placeholder={"Date from GPS file"}
                 startDate={journey?.startDate ? new Date(journey.startDate) : undefined}
                 endDate={journey?.endDate ? new Date(journey.endDate) : undefined}
+                disabled={true}
               />
+              <p className="mt-1 text-muted-foreground text-xs">
+                {parsedGPSData
+                  ? "Date automatically set from GPS file"
+                  : "Upload a GPS file to set the date"}
+              </p>
             </div>
 
             <div className="col-span-2 md:col-span-1">
@@ -151,7 +180,14 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
 
         {/* Activity Data Section */}
         <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <h2 className="mb-6 font-semibold text-card-foreground text-lg">Activity Data</h2>
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="font-semibold text-card-foreground text-lg">Activity Data</h2>
+            {!parsedGPSData && (
+              <div className="rounded-md bg-amber-50 px-3 py-1 text-amber-800 text-xs dark:bg-amber-950/30 dark:text-amber-300">
+                Please upload a GPS file first
+              </div>
+            )}
+          </div>
           <GPSFileUpload onFileProcessed={handleGPSFileProcessed} />
         </div>
 
