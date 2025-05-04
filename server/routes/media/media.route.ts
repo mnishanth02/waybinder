@@ -53,7 +53,7 @@ const mediaQuerySchema = z.object({
 // ===== Route setup =====
 
 // Create a new router instance
-const mediaRouter = new Hono()
+export const mediaRouter = new Hono()
   // Get media by ID
   .get("/:id", zValidator("param", idParamSchema), async (c) => {
     const id = c.req.param("id");

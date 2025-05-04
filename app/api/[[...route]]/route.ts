@@ -4,7 +4,8 @@ import app from "@/server";
 import activityRouter from "@/server/routes/activity/activity.route";
 import athleteRouter from "@/server/routes/athlete/athlete.route";
 import journeyRouter from "@/server/routes/journey/journey.route";
-import mediaRoutes from "@/server/routes/media";
+import gpxFilesRouter from "@/server/routes/media/gpx-files.route";
+import mediaRouter from "@/server/routes/media/media.route";
 import userRouter from "@/server/routes/user/user.route";
 
 export const runtime = "edge";
@@ -14,7 +15,8 @@ const routes = app
   .route("/athlete", athleteRouter)
   .route("/journey", journeyRouter)
   .route("/activity", activityRouter)
-  .route("/media", mediaRoutes);
+  .route("/media", mediaRouter)
+  .route("/gpx", gpxFilesRouter);
 
 //
 
