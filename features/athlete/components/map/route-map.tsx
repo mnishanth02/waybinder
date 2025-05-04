@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Layer, Map as LibreMap, NavigationControl, Source } from "react-map-gl/maplibre";
 import type { LineLayerSpecification, MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { createOSMStyle } from "@/lib/utils/map-utils";
 
 interface RouteMapProps {
   geoJSON?: GeoJSON.FeatureCollection;
@@ -130,28 +131,109 @@ const RouteMap: React.FC<RouteMapProps> = ({
     }, 100);
   }, [geoJSON, extractCoordinates, calculateBounds]);
 
-  // Handle map load event to fit bounds - memoized with useCallback
+  // Reference to the custom control container for cleanup
+  const customControlRef = useRef<HTMLDivElement | null>(null);
+
+  // Handle map load event to fit bounds and add custom controls
   const onMapLoad = useCallback(() => {
-    if (!geoJSON || !mapRef.current) return;
+    if (!mapRef.current) return;
 
-    const coordinates = extractCoordinates(geoJSON);
-    if (coordinates.length === 0) return;
-
-    const bounds = calculateBounds(coordinates);
     const map = mapRef.current.getMap();
 
-    map.fitBounds(
-      [
-        [bounds.minLng, bounds.minLat],
-        [bounds.maxLng, bounds.maxLat],
-      ],
-      {
-        padding: 50,
-        duration: 1000,
-        maxZoom: 16, // Prevent zooming in too far on small routes
-      }
-    );
+    // Add reset view control
+    const resetViewControl = document.createElement("button");
+    resetViewControl.className = "maplibregl-ctrl-icon maplibregl-ctrl-reset";
+    resetViewControl.type = "button";
+    resetViewControl.setAttribute("aria-label", "Reset View");
+    resetViewControl.innerHTML = `
+      <span style="font-size: 18px; display: flex; justify-content: center; align-items: center; height: 100%;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"></path>
+          <path d="M3 12h2"></path>
+          <path d="M19 12h2"></path>
+          <path d="M12 3v2"></path>
+          <path d="M12 19v2"></path>
+        </svg>
+      </span>
+    `;
+
+    resetViewControl.addEventListener("click", () => {
+      if (!geoJSON || !mapRef.current) return;
+
+      const coordinates = extractCoordinates(geoJSON);
+      if (coordinates.length === 0) return;
+
+      const bounds = calculateBounds(coordinates);
+      const map = mapRef.current.getMap();
+
+      map.fitBounds(
+        [
+          [bounds.minLng, bounds.minLat],
+          [bounds.maxLng, bounds.maxLat],
+        ],
+        {
+          padding: 50,
+          duration: 1000,
+          maxZoom: 16, // Prevent zooming in too far on small routes
+        }
+      );
+    });
+
+    // Create a custom control container
+    const customControlContainer = document.createElement("div");
+    customControlContainer.className = "maplibregl-ctrl maplibregl-ctrl-group";
+    customControlContainer.appendChild(resetViewControl);
+    customControlRef.current = customControlContainer;
+
+    // Add the custom control to the map
+    const controlContainer = map
+      .getContainer()
+      .querySelector(".maplibregl-control-container .maplibregl-ctrl-top-right");
+
+    if (controlContainer) {
+      controlContainer.appendChild(customControlContainer);
+    }
+
+    // Fit to bounds if geoJSON is available
+    if (geoJSON) {
+      const coordinates = extractCoordinates(geoJSON);
+      if (coordinates.length === 0) return;
+
+      const bounds = calculateBounds(coordinates);
+
+      map.fitBounds(
+        [
+          [bounds.minLng, bounds.minLat],
+          [bounds.maxLng, bounds.maxLat],
+        ],
+        {
+          padding: 50,
+          duration: 1000,
+          maxZoom: 16, // Prevent zooming in too far on small routes
+        }
+      );
+    }
   }, [geoJSON, extractCoordinates, calculateBounds]);
+
+  // Cleanup custom controls when component unmounts
+  useEffect(() => {
+    return () => {
+      if (customControlRef.current && mapRef.current) {
+        try {
+          const controlContainer = mapRef.current
+            .getMap()
+            .getContainer()
+            .querySelector(".maplibregl-control-container .maplibregl-ctrl-top-right");
+
+          if (controlContainer && customControlRef.current.parentNode === controlContainer) {
+            controlContainer.removeChild(customControlRef.current);
+          }
+        } catch (e) {
+          console.error("Error removing custom control:", e);
+        }
+      }
+    };
+  }, []);
 
   return (
     <div style={{ height, width }} className={className}>
@@ -160,9 +242,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
         onLoad={onMapLoad}
-        mapStyle="https://demotiles.maplibre.org/style.json"
+        mapStyle={createOSMStyle()}
         style={{ width: "100%", height: "100%", borderRadius: "0.375rem" }}
       >
+        {/* Navigation controls with zoom in/out and compass */}
         <NavigationControl position="top-right" />
 
         {geoJSON && (
