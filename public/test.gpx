@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="StravaGPX" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
+  <metadata>
+    <name>Test Hike</name>
+    <author>
+      <name>Test User</name>
+    </author>
+    <time>2023-05-01T08:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>Test Hike</name>
+    <type>hiking</type>
+    <trkseg>
+      <trkpt lat="37.7749" lon="-122.4194">
+        <ele>10</ele>
+        <time>2023-05-01T08:00:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7750" lon="-122.4195">
+        <ele>12</ele>
+        <time>2023-05-01T08:05:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7751" lon="-122.4196">
+        <ele>15</ele>
+        <time>2023-05-01T08:10:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7752" lon="-122.4197">
+        <ele>18</ele>
+        <time>2023-05-01T08:15:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7753" lon="-122.4198">
+        <ele>20</ele>
+        <time>2023-05-01T08:20:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7754" lon="-122.4199">
+        <ele>22</ele>
+        <time>2023-05-01T08:25:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7755" lon="-122.4200">
+        <ele>25</ele>
+        <time>2023-05-01T08:30:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7756" lon="-122.4201">
+        <ele>28</ele>
+        <time>2023-05-01T08:35:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7757" lon="-122.4202">
+        <ele>30</ele>
+        <time>2023-05-01T08:40:00Z</time>
+      </trkpt>
+      <trkpt lat="37.7758" lon="-122.4203">
+        <ele>32</ele>
+        <time>2023-05-01T08:45:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

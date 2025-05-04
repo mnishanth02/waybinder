@@ -5,19 +5,20 @@ import { InputWithLabel } from "@/components/custom/input-with-label";
 import { SelectWithLabel } from "@/components/custom/select-with-label";
 import { TextareaWithLabel } from "@/components/custom/textarea-with-label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { ParsedGPSData } from "@/lib/utils/gps-file-parser";
 import type { JourneyTypeSelect } from "@/server/db/schema";
 import { ACTIVITY_TYPES, createSelectOptions } from "@/types/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FileUp, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { type ActivitySchemaValues, activitySchema } from "../../athlete-validator";
+import GPSFileUpload from "./gps-file-upload";
 
 // Create select options for activity types
 const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
@@ -33,19 +34,7 @@ interface ActivityFormProps {
 
 export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormProps) {
   // State for file uploads
-  const [gpxFile, setGpxFile] = useState<File | null>(null);
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
-  const [gpxStats, setGpxStats] = useState<{
-    distance: string;
-    duration: string;
-    elevation: string;
-    pace: string;
-  }>({
-    distance: "-",
-    duration: "-",
-    elevation: "-",
-    pace: "-",
-  });
 
   // Define the form with proper typing
   const form = useForm<ActivitySchemaValues>({
@@ -72,27 +61,19 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
     }
   }, [errors]);
 
-  // Handle GPX file upload
-  const handleGpxFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Handle GPS file processing
+  const handleGPSFileProcessed = (data: ParsedGPSData) => {
+    console.log("GPS file processed:", data);
 
-    setGpxFile(file);
+    // Here we could set form values based on parsed data:
+    // form.setValue("distanceKm", data.stats.distance / 1000);
+    // form.setValue("elevationGainM", data.stats.elevation.gain);
+    // form.setValue("movingTimeSeconds", data.stats.duration);
 
-    // TODO: Implement actual GPX parsing using the plan in docs/guides/enhanced-mapgl.md
-    // This is a placeholder that will be replaced with actual GPX parsing
-    // when the GPS file management system is implemented
-    setGpxStats({
-      distance: "12.5 km", // Placeholder value
-      duration: "1:45:30", // Placeholder value
-      elevation: "450 m", // Placeholder value
-      pace: "8:24/km", // Placeholder value
-    });
-
-    // In the future, we'll set form values based on parsed data:
-    // setValue("distanceKm", parsedData.distance);
-    // setValue("elevationGainM", parsedData.elevationGain);
-    // setValue("movingTimeSeconds", parsedData.movingTime);
+    // If the file contains timestamps, we could also set the activity date:
+    if (data.stats.startTime) {
+      form.setValue("activityDate", data.stats.startTime);
+    }
   };
 
   // Handle photo uploads
@@ -115,17 +96,6 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
       URL.revokeObjectURL(previewUrl);
     }
     setPhotosPreviews((prev: string[]) => prev.filter((_: string, i: number) => i !== index));
-  };
-
-  // Remove GPX file
-  const removeGpxFile = () => {
-    setGpxFile(null);
-    setGpxStats({
-      distance: "-",
-      duration: "-",
-      elevation: "-",
-      pace: "-",
-    });
   };
 
   // Clean up URL objects on unmount
@@ -182,79 +152,7 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
         {/* Activity Data Section */}
         <div className="rounded-lg border bg-card p-6 shadow-sm">
           <h2 className="mb-6 font-semibold text-card-foreground text-lg">Activity Data</h2>
-          <Card className="border border-dashed bg-background">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center justify-center text-center">
-                {gpxFile ? (
-                  <div className="flex w-full items-center justify-between rounded border bg-muted/30 p-3">
-                    <div className="flex items-center">
-                      <FileUp className="mr-2 h-5 w-5 text-primary" />
-                      <span className="font-medium">{gpxFile.name}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      type="button"
-                      onClick={removeGpxFile}
-                      className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mb-4 rounded-full bg-primary/10 p-3">
-                      <Upload className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="mb-1 font-medium text-base">
-                      Drop your GPX, FIT, or TCX file here or click to upload
-                    </h3>
-                    <p className="mb-4 text-muted-foreground text-sm">
-                      Supported formats: .gpx, .fit, .tcx
-                    </p>
-                    <Label
-                      htmlFor="gpx-file-upload"
-                      className="cursor-pointer rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-                    >
-                      Choose File
-                      <Input
-                        id="gpx-file-upload"
-                        type="file"
-                        accept=".gpx,.fit,.tcx"
-                        className="hidden"
-                        onChange={handleGpxFileChange}
-                      />
-                    </Label>
-                  </>
-                )}
-              </div>
-
-              {/* Placeholder for map preview */}
-              <div className="mt-6 flex h-48 items-center justify-center overflow-hidden rounded-md border border-border bg-muted shadow-sm">
-                <p className="text-muted-foreground">Map preview will appear here</p>
-              </div>
-
-              {/* Activity stats from GPX */}
-              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
-                  <p className="mb-1 font-medium text-muted-foreground text-xs">Distance</p>
-                  <p className="font-semibold text-card-foreground">{gpxStats.distance}</p>
-                </div>
-                <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
-                  <p className="mb-1 font-medium text-muted-foreground text-xs">Duration</p>
-                  <p className="font-semibold text-card-foreground">{gpxStats.duration}</p>
-                </div>
-                <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
-                  <p className="mb-1 font-medium text-muted-foreground text-xs">Elevation Gain</p>
-                  <p className="font-semibold text-card-foreground">{gpxStats.elevation}</p>
-                </div>
-                <div className="rounded-md border border-border bg-card p-3 text-center shadow-sm transition-all hover:shadow-md">
-                  <p className="mb-1 font-medium text-muted-foreground text-xs">Avg. Pace</p>
-                  <p className="font-semibold text-card-foreground">{gpxStats.pace}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <GPSFileUpload onFileProcessed={handleGPSFileProcessed} />
         </div>
 
         {/* Photos Section */}
