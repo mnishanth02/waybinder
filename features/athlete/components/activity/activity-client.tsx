@@ -123,6 +123,8 @@ export function ActivityClient({ activityId, journey, isNewActivity }: ActivityC
 
   // Event handlers
   const handleSubmit = (data: ActivitySchemaValues) => {
+    setSaveAndAddAnother(false);
+
     // Validate that the activity date is within the journey date range
     if (journey.startDate && journey.endDate) {
       // Use the new date range validation function
