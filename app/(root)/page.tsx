@@ -1,7 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import FileUploadExample from "@/docs/examples/use-file-upload.example";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -20,9 +19,7 @@ export default function Home() {
           <Button onClick={handleOnboardingClick}>Athlete Onboarding</Button>
         </CardContent>
       </Card>
-      <div>
-        <FileUploadExample />
-      </div>
+      <div>{/* <FileUploadExample /> */}</div>
     </div>
   );
 }
