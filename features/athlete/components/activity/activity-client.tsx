@@ -1,4 +1,5 @@
 "use client";
+import Loader from "@/components/common/loader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,7 +73,7 @@ function ActivityFormSection({
   }
 
   if (isLoadingActivity) {
-    return <div className="py-8 text-center">Loading activity data...</div>;
+    return <Loader />;
   }
 
   if (!activityData) {

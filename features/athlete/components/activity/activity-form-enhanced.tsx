@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ParsedGPSData } from "@/lib/utils/gps-file-parser";
 import type { JourneyTypeSelect } from "@/server/db/schema";
 import { ACTIVITY_TYPES, createSelectOptions } from "@/types/enums";
@@ -24,18 +25,29 @@ import GPSFileUpload from "./gps-file-upload";
 const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
 
 interface ActivityFormProps {
-  onSubmit: (data: ActivitySchemaValues) => void;
+  onSubmit: (data: ActivitySchemaValues) => Promise<void> | void;
   defaultValues?: Partial<ActivitySchemaValues>;
-  isSubmitting?: boolean; // Kept for API compatibility but not used internally
+  isSubmitting?: boolean;
   journey?: JourneyTypeSelect;
 }
 
-export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormProps) {
+export function ActivityForm({
+  onSubmit,
+  defaultValues,
+  isSubmitting = false,
+  journey,
+}: ActivityFormProps) {
   // State for file uploads
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
 
   // State for GPS data
   const [parsedGPSData, setParsedGPSData] = useState<ParsedGPSData | null>(null);
+
+  // State for loading and error handling
+  const [isProcessingGPS, setIsProcessingGPS] = useState(false);
+  const [isSubmittingForm, setIsSubmittingForm] = useState(isSubmitting);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [gpsError, setGpsError] = useState<string | null>(null);
 
   // Define the form with proper typing
   const form = useForm<ActivitySchemaValues>({
@@ -55,27 +67,49 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
     formState: { errors },
   } = form;
 
+  // Update internal submitting state when prop changes
+  useEffect(() => {
+    setIsSubmittingForm(isSubmitting);
+  }, [isSubmitting]);
+
+  // Log form errors in development
   useEffect(() => {
     if (process.env.NODE_ENV === "development" && Object.keys(errors).length > 0) {
-      // Silent in production, log only in development
       console.log("Form errors:", errors);
     }
   }, [errors]);
 
   // Handle GPS file processing
   const handleGPSFileProcessed = (data: ParsedGPSData) => {
-    console.log("GPS file processed:", data);
+    try {
+      // Clear any previous errors
+      setGpsError(null);
 
-    // Store the parsed GPS data for later use
-    setParsedGPSData(data);
+      // Store the parsed GPS data for later use
+      setParsedGPSData(data);
 
-    // Set the activity date from the GPS file's start time
-    // If no start time is available, use the current date
-    if (data.stats.startTime) {
-      form.setValue("activityDate", data.stats.startTime);
-    } else {
-      // If no start time in GPS file, use current date
-      form.setValue("activityDate", new Date());
+      // Set the activity date from the GPS file's start time
+      // If no start time is available, use the current date
+      if (data.stats.startTime) {
+        form.setValue("activityDate", data.stats.startTime);
+      } else {
+        // If no start time in GPS file, use current date
+        form.setValue("activityDate", new Date());
+      }
+
+      // Suggest a title if none exists yet
+      const currentTitle = form.getValues("title");
+      if (!currentTitle || currentTitle.trim() === "") {
+        const suggestedTitle = `${form.getValues("activityType") || "Activity"} on ${
+          data.stats.startTime
+            ? data.stats.startTime.toLocaleDateString()
+            : new Date().toLocaleDateString()
+        }`;
+        form.setValue("title", suggestedTitle);
+      }
+    } catch (error) {
+      console.error("Error processing GPS data:", error);
+      setGpsError(error instanceof Error ? error.message : "Failed to process GPS data");
     }
   };
 
@@ -110,33 +144,53 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
     };
   }, [photosPreviews]);
 
-  const handleSubmit = (values: ActivitySchemaValues) => {
-    // Create a copy of the form values
-    const formData = { ...values };
+  const handleSubmit = async (values: ActivitySchemaValues) => {
+    try {
+      // Clear any previous errors
+      setFormError(null);
 
-    // If we have GPS data, extract the relevant fields
-    if (parsedGPSData) {
-      // Add the GPS data to the form values
-      // These will be passed to the onSubmit handler but are not part of the form itself
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      (formData as any).gpsData = {
-        distanceKm: parsedGPSData.stats.distance / 1000,
-        elevationGainM: parsedGPSData.stats.elevation.gain,
-        elevationLossM: parsedGPSData.stats.elevation.loss,
-        movingTimeSeconds: parsedGPSData.stats.duration,
-        startTime: parsedGPSData.stats.startTime,
-        endTime: parsedGPSData.stats.endTime,
-        geoJSON: parsedGPSData.geoJSON,
-      };
+      // Set submitting state
+      setIsSubmittingForm(true);
+
+      // Create a copy of the form values
+      const formData = { ...values };
+
+      // If we have GPS data, extract the relevant fields
+      if (parsedGPSData) {
+        // Add the GPS data to the form values
+        // These will be passed to the onSubmit handler but are not part of the form itself
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        (formData as any).gpsData = {
+          distanceKm: parsedGPSData.stats.distance / 1000,
+          elevationGainM: parsedGPSData.stats.elevation.gain,
+          elevationLossM: parsedGPSData.stats.elevation.loss,
+          movingTimeSeconds: parsedGPSData.stats.duration,
+          startTime: parsedGPSData.stats.startTime,
+          endTime: parsedGPSData.stats.endTime,
+          geoJSON: parsedGPSData.geoJSON,
+        };
+      }
+
+      // Submit the form data with the GPS data included
+      await Promise.resolve(onSubmit(formData));
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setFormError(error instanceof Error ? error.message : "Failed to submit activity");
+    } finally {
+      setIsSubmittingForm(false);
     }
-
-    // Submit the form data with the GPS data included
-    onSubmit(formData);
   };
 
   return (
     <Form {...form}>
       <form id="activity-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        {/* Display form error if any */}
+        {formError && (
+          <div className="rounded-md bg-destructive/10 p-3 text-destructive">
+            <p className="font-medium">Error submitting form</p>
+            <p className="text-sm">{formError}</p>
+          </div>
+        )}
         {/* Basic Information Section */}
         <div className="rounded-lg border bg-card p-6 shadow-sm">
           <h2 className="mb-6 font-semibold text-card-foreground text-lg">Basic Information</h2>
@@ -182,13 +236,69 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
         <div className="rounded-lg border bg-card p-6 shadow-sm">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="font-semibold text-card-foreground text-lg">Activity Data</h2>
-            {!parsedGPSData && (
+            {!parsedGPSData && !isProcessingGPS && (
               <div className="rounded-md bg-amber-50 px-3 py-1 text-amber-800 text-xs dark:bg-amber-950/30 dark:text-amber-300">
                 Please upload a GPS file first
               </div>
             )}
+            {isProcessingGPS && (
+              <div className="rounded-md bg-blue-50 px-3 py-1 text-blue-800 text-xs dark:bg-blue-950/30 dark:text-blue-300">
+                Processing GPS file...
+              </div>
+            )}
           </div>
-          <GPSFileUpload onFileProcessed={handleGPSFileProcessed} />
+
+          {/* Display GPS error if any */}
+          {gpsError && (
+            <div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive">
+              <p className="font-medium">Error processing GPS file</p>
+              <p className="text-sm">{gpsError}</p>
+            </div>
+          )}
+
+          {/* Show skeletons when processing */}
+          {isProcessingGPS && (
+            <div className="mb-6 space-y-6">
+              {/* Skeleton for map */}
+              <Skeleton className="h-[420px] w-full rounded-md" />
+
+              {/* Skeleton for stats */}
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
+                {/* Distance */}
+                <div className="rounded-md border border-border p-3 text-center">
+                  <Skeleton className="mx-auto mb-2 h-4 w-16" />
+                  <Skeleton className="mx-auto h-6 w-20" />
+                </div>
+                {/* Duration */}
+                <div className="rounded-md border border-border p-3 text-center">
+                  <Skeleton className="mx-auto mb-2 h-4 w-16" />
+                  <Skeleton className="mx-auto h-6 w-20" />
+                </div>
+                {/* Elevation */}
+                <div className="rounded-md border border-border p-3 text-center">
+                  <Skeleton className="mx-auto mb-2 h-4 w-16" />
+                  <Skeleton className="mx-auto h-6 w-20" />
+                </div>
+                {/* Pace */}
+                <div className="rounded-md border border-border p-3 text-center">
+                  <Skeleton className="mx-auto mb-2 h-4 w-16" />
+                  <Skeleton className="mx-auto h-6 w-20" />
+                </div>
+                {/* Time */}
+                <div className="rounded-md border border-border p-3 text-center">
+                  <Skeleton className="mx-auto mb-2 h-4 w-16" />
+                  <Skeleton className="mx-auto h-6 w-20" />
+                  <Skeleton className="mx-auto mt-1 h-6 w-20" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Always show the GPS file upload component */}
+          <GPSFileUpload
+            onFileProcessed={handleGPSFileProcessed}
+            onProcessingStateChange={setIsProcessingGPS}
+          />
         </div>
 
         {/* Photos Section */}
@@ -274,6 +384,44 @@ export function ActivityForm({ onSubmit, defaultValues, journey }: ActivityFormP
               />
             </div>
           </div>
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            size="lg"
+            className="px-8"
+            disabled={isSubmittingForm || isProcessingGPS}
+          >
+            {isSubmittingForm ? (
+              <>
+                <svg
+                  className="mr-2 h-4 w-4 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Saving...
+              </>
+            ) : (
+              "Save Activity"
+            )}
+          </Button>
         </div>
       </form>
     </Form>

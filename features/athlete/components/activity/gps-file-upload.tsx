@@ -17,10 +17,15 @@ import RouteMap from "../map/route-map";
 
 interface GPSFileUploadProps {
   onFileProcessed: (data: ParsedGPSData) => void;
+  onProcessingStateChange?: (isProcessing: boolean) => void;
   className?: string;
 }
 
-const GPSFileUpload: React.FC<GPSFileUploadProps> = ({ onFileProcessed, className = "" }) => {
+const GPSFileUpload: React.FC<GPSFileUploadProps> = ({
+  onFileProcessed,
+  onProcessingStateChange,
+  className = "",
+}) => {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +37,8 @@ const GPSFileUpload: React.FC<GPSFileUploadProps> = ({ onFileProcessed, classNam
 
     setFile(selectedFile);
     setIsProcessing(true);
+    // Notify parent component about processing state
+    onProcessingStateChange?.(true);
     setError(null);
 
     try {
@@ -49,6 +56,8 @@ const GPSFileUpload: React.FC<GPSFileUploadProps> = ({ onFileProcessed, classNam
       setGpsData(null);
     } finally {
       setIsProcessing(false);
+      // Notify parent component about processing state
+      onProcessingStateChange?.(false);
     }
   };
 
@@ -118,7 +127,7 @@ const GPSFileUpload: React.FC<GPSFileUploadProps> = ({ onFileProcessed, classNam
           {/* Map preview */}
           {gpsData && (
             <div className="mt-6">
-              <RouteMap geoJSON={gpsData.geoJSON} height="300px" />
+              <RouteMap geoJSON={gpsData.geoJSON} height="420px" />
             </div>
           )}
 
