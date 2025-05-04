@@ -66,6 +66,10 @@ export const ACTIVITY_TYPES = [
 export type ActivityType = (typeof ACTIVITY_TYPES)[number];
 export const activityTypeSchema = z.enum(ACTIVITY_TYPES);
 
+export const MEDIA_TYPES = ["image", "video", "gpx", "document", "audio", "other"] as const;
+export type MediaType = (typeof MEDIA_TYPES)[number];
+export const mediaTypeSchema = z.enum(MEDIA_TYPES);
+
 // Privacy Status
 export const PRIVACY_STATUSES = ["private", "public"] as const;
 export type PrivacyStatus = (typeof PRIVACY_STATUSES)[number];

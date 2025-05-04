@@ -5,6 +5,7 @@ import {
   FITNESS_LEVELS,
   GENDERS,
   JOURNEY_TYPES,
+  MEDIA_TYPES,
   PRIVACY_STATUSES,
   USER_ROLES,
 } from "@/types/enums";
@@ -19,3 +20,4 @@ export const bloodGroupEnum = pgEnum("blood_group", BLOOD_GROUPS);
 export const journeyTypeEnum = pgEnum("journey_type", JOURNEY_TYPES);
 export const privacyStatusEnum = pgEnum("privacy_status", PRIVACY_STATUSES);
 export const activityTypeEnum = pgEnum("activity_type", ACTIVITY_TYPES);
+export const mediaTypeEnum = pgEnum("media_type", MEDIA_TYPES);
