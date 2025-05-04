@@ -18,12 +18,14 @@ import RouteMap from "../map/route-map";
 interface GPSFileUploadProps {
   onFileProcessed: (data: ParsedGPSData) => void;
   onProcessingStateChange?: (isProcessing: boolean) => void;
+  onFileSelected?: (file: File) => void;
   className?: string;
 }
 
 const GPSFileUpload: React.FC<GPSFileUploadProps> = ({
   onFileProcessed,
   onProcessingStateChange,
+  onFileSelected,
   className = "",
 }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -40,6 +42,9 @@ const GPSFileUpload: React.FC<GPSFileUploadProps> = ({
     // Notify parent component about processing state
     onProcessingStateChange?.(true);
     setError(null);
+
+    // Notify parent component about the selected file
+    onFileSelected?.(selectedFile);
 
     try {
       // Process the GPS file to get all data formats

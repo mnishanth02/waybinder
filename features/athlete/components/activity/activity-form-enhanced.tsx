@@ -9,6 +9,8 @@ import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { env } from "@/env/client-env";
+import { useGPSFileUpload } from "@/lib/hooks";
 import type { ParsedGPSData } from "@/lib/utils/gps-file-parser";
 import type { JourneyTypeSelect } from "@/server/db/schema";
 import { ACTIVITY_TYPES, createSelectOptions } from "@/types/enums";
@@ -23,6 +25,15 @@ import GPSFileUpload from "./gps-file-upload";
 
 // Create select options for activity types
 const activityTypeOptions = createSelectOptions(ACTIVITY_TYPES);
+
+// R2 storage configuration
+const r2Config = {
+  endpoint: env.NEXT_PUBLIC_R2_ENDPOINT || "",
+  accessKeyId: env.NEXT_PUBLIC_R2_ACCESS_KEY_ID || "",
+  secretAccessKey: env.NEXT_PUBLIC_R2_SECRET_ACCESS_KEY || "",
+  bucket: env.NEXT_PUBLIC_R2_BUCKET_NAME || "",
+  publicUrl: env.NEXT_PUBLIC_R2_PUBLIC_URL,
+};
 
 interface ActivityFormProps {
   onSubmit: (data: ActivitySchemaValues) => Promise<void> | void;
@@ -42,6 +53,18 @@ export function ActivityForm({
 
   // State for GPS data
   const [parsedGPSData, setParsedGPSData] = useState<ParsedGPSData | null>(null);
+
+  // State for GPS file
+  const [gpsFile, setGpsFile] = useState<File | null>(null);
+  const [_gpsFileUrl, setGpsFileUrl] = useState<string | null>(null);
+
+  // Initialize the GPS file upload hook
+  const {
+    uploadGPSFile,
+    isUploading: isUploadingGPS,
+    progress: gpsUploadProgress,
+    error: gpsUploadError,
+  } = useGPSFileUpload(r2Config);
 
   // State for loading and error handling
   const [isProcessingGPS, setIsProcessingGPS] = useState(false);
@@ -71,6 +94,10 @@ export function ActivityForm({
   useEffect(() => {
     setIsSubmittingForm(isSubmitting);
   }, [isSubmitting]);
+
+  useEffect(() => {
+    console.log("gpsFileUrl", _gpsFileUrl);
+  }, [_gpsFileUrl]);
 
   // Log form errors in development
   useEffect(() => {
@@ -144,6 +171,11 @@ export function ActivityForm({
     };
   }, [photosPreviews]);
 
+  // Save the GPS file when it's processed
+  const handleGPSFileSelected = (file: File) => {
+    setGpsFile(file);
+  };
+
   const handleSubmit = async (values: ActivitySchemaValues) => {
     try {
       // Clear any previous errors
@@ -155,10 +187,41 @@ export function ActivityForm({
       // Create a copy of the form values
       const formData = { ...values };
 
-      // If we have GPS data, extract the relevant fields
-      if (parsedGPSData) {
-        // Add the GPS data to the form values
-        // These will be passed to the onSubmit handler but are not part of the form itself
+      // If we have a GPS file, upload it to R2 storage
+      if (gpsFile && parsedGPSData) {
+        try {
+          // Upload the GPS file to R2 storage
+          const uploadResult = await uploadGPSFile(gpsFile, {
+            keyPrefix: "gpx/",
+            public: true,
+            extractData: true,
+          });
+
+          // Store the uploaded file URL
+          setGpsFileUrl(uploadResult.url);
+
+          // Add the GPS data and file URL to the form values
+          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          (formData as any).gpsData = {
+            distanceKm: parsedGPSData.stats.distance / 1000,
+            elevationGainM: parsedGPSData.stats.elevation.gain,
+            elevationLossM: parsedGPSData.stats.elevation.loss,
+            movingTimeSeconds: parsedGPSData.stats.duration,
+            startTime: parsedGPSData.stats.startTime,
+            endTime: parsedGPSData.stats.endTime,
+            geoJSON: parsedGPSData.geoJSON,
+            fileUrl: uploadResult.url,
+            fileName: gpsFile.name,
+          };
+        } catch (uploadError) {
+          console.error("Error uploading GPS file:", uploadError);
+          setFormError(
+            uploadError instanceof Error ? uploadError.message : "Failed to upload GPS file"
+          );
+          return;
+        }
+      } else if (parsedGPSData) {
+        // If we have GPS data but no file (shouldn't happen), add the GPS data without the file URL
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         (formData as any).gpsData = {
           distanceKm: parsedGPSData.stats.distance / 1000,
@@ -246,13 +309,18 @@ export function ActivityForm({
                 Processing GPS file...
               </div>
             )}
+            {isUploadingGPS && gpsUploadProgress && (
+              <div className="rounded-md bg-blue-50 px-3 py-1 text-blue-800 text-xs dark:bg-blue-950/30 dark:text-blue-300">
+                Uploading: {gpsUploadProgress.percentage.toFixed(0)}%
+              </div>
+            )}
           </div>
 
           {/* Display GPS error if any */}
-          {gpsError && (
+          {(gpsError || gpsUploadError) && (
             <div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive">
               <p className="font-medium">Error processing GPS file</p>
-              <p className="text-sm">{gpsError}</p>
+              <p className="text-sm">{gpsError || gpsUploadError?.message}</p>
             </div>
           )}
 
@@ -298,6 +366,7 @@ export function ActivityForm({
           <GPSFileUpload
             onFileProcessed={handleGPSFileProcessed}
             onProcessingStateChange={setIsProcessingGPS}
+            onFileSelected={handleGPSFileSelected}
           />
         </div>
 
@@ -392,9 +461,9 @@ export function ActivityForm({
             type="submit"
             size="lg"
             className="px-8"
-            disabled={isSubmittingForm || isProcessingGPS}
+            disabled={isSubmittingForm || isProcessingGPS || isUploadingGPS}
           >
-            {isSubmittingForm ? (
+            {isSubmittingForm || isUploadingGPS ? (
               <>
                 <svg
                   className="mr-2 h-4 w-4 animate-spin"
@@ -416,7 +485,7 @@ export function ActivityForm({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Saving...
+                {isUploadingGPS ? "Uploading..." : "Saving..."}
               </>
             ) : (
               "Save Activity"
